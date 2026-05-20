@@ -1,0 +1,39 @@
+/* ============================================================
+   NOXARA - Mobile CSS
+   ============================================================ */
+@media (max-width: 480px) {
+  .page-wrapper{padding:12px;padding-bottom:90px}
+  .admin-stats-grid{grid-template-columns:1fr 1fr}
+  .form-row{grid-template-columns:1fr}
+  .admin-chat-layout{flex-direction:column;height:auto}
+  .admin-chat-users{width:100%;max-height:200px}
+  .admin-chat-area{min-height:350px}
+  .landing-stats{grid-template-columns:repeat(4,1fr);gap:4px}
+  .lstat-num{font-size:12px}
+}
+/* Prevent zoom on inputs */
+input,select,textarea{font-size:16px!important}
+@media (min-width:481px){input,select,textarea{font-size:14px!important}}
+/* Safe area */
+.bottom-nav{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+/* Touch feedback */
+.btn:active{transform:scale(0.97)}
+.menu-item:active{transform:scale(0.95)}
+.product-card:active,.mining-card:active{transform:scale(0.99)}
+/* Pulse glow */
+.animate-glow{animation:glowPulse 2s ease-in-out infinite}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 10px rgba(255,215,0,0.3)}50%{box-shadow:0 0 25px rgba(255,215,0,0.6)}}
+/* Smooth transitions for theme change */
+body,*{transition-property:background-color,border-color,color;transition-duration:0.2s}
+/* Disable transition for animations */
+.animate-bounce,.animate-spin,.running-text-track,.banner-slide{transition:none}
+/* Particles background */
+#particles-bg,#app>.auth-bg .auth-particles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+/* Fix z-index stacking */
+.auth-container{position:relative;z-index:1}
+/* Swipe hint */
+.cat-tabs::after,.banner-slider::after{content:'';position:absolute;right:0;top:0;bottom:0;width:20px;background:linear-gradient(to right,transparent,var(--bg));pointer-events:none}
