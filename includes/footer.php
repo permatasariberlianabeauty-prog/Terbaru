@@ -91,8 +91,17 @@
   </div>
 </div>
 
-<script src="<?= APP_URL ?>/assets/js/main.js"></script>
-<script src="<?= APP_URL ?>/assets/js/animations.js"></script>
+<?php
+$_scriptRelPath2 = str_replace(
+    str_replace('\\','/',rtrim($_SERVER['DOCUMENT_ROOT'],'/\\')) . '/',
+    '',
+    str_replace('\\','/',dirname($_SERVER['SCRIPT_FILENAME'])) . '/'
+);
+$_assetDepth2 = max(0, substr_count(trim($_scriptRelPath2,'/'), '/') + (strlen(trim($_scriptRelPath2,'/')) > 0 ? 1 : 0));
+$_relBase2 = str_repeat('../', $_assetDepth2);
+?>
+<script src="<?= $_relBase2 ?>assets/js/main.js"></script>
+<script src="<?= $_relBase2 ?>assets/js/animations.js"></script>
 <script>
   lucide.createIcons();
   <?php if (isset($user) && $user): ?>
