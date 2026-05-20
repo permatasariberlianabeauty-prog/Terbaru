@@ -4,7 +4,14 @@
 // ============================================================
 define('APP_NAME', 'Noxara');
 define('APP_TAGLINE', 'Invest Smarter, Grow Faster');
-define('APP_URL', 'https://noxara.page');
+
+// Auto-detect URL atau gunakan hardcoded
+if (!defined('APP_URL')) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'noxara.page';
+    define('APP_URL', $protocol . '://' . $host);
+}
+
 define('APP_VERSION', '1.0.0');
 
 // Database

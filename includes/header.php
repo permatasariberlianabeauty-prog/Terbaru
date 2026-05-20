@@ -27,6 +27,13 @@ $userLang    = $user['lang'] ?? 'id';
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mobile.css">
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/animations.css">
+<style>
+/* Fallback inline CSS */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0A0E1A;color:#E8EAED;font-family:Inter,sans-serif;min-height:100vh}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+</style>
 </head>
 <body class="theme-<?= $userTheme ?>">
 <div id="app">

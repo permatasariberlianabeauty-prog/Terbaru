@@ -2,6 +2,11 @@
 require_once __DIR__ . '/config/bootstrap.php';
 if (isLoggedIn()) redirect(APP_URL . '/pages/dashboard.php');
 if (isAdmin()) redirect(APP_URL . '/adm-noxara/index.php');
+
+// Detect base URL dynamically as fallback
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'noxara.page';
+$baseUrl = defined('APP_URL') ? APP_URL : $protocol . '://' . $host;
 ?>
 <!DOCTYPE html>
 <html lang="id" data-theme="dark">
@@ -13,9 +18,107 @@ if (isAdmin()) redirect(APP_URL . '/adm-noxara/index.php');
 <title><?= APP_NAME ?> - <?= getSetting('site_tagline', APP_TAGLINE) ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
-<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mobile.css">
-<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/animations.css">
+<link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/style.css">
+<link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/mobile.css">
+<link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/animations.css">
+<style>
+/* === NOXARA LANDING PAGE - INLINE CRITICAL CSS === */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#0A0E1A;color:#E8EAED;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+a{text-decoration:none;color:inherit}
+img{max-width:100%}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+:root{--bg:#0A0E1A;--bg2:#0F1423;--bg3:#141928;--card:#161C2E;--card2:#1A2035;--border:#1E2A45;--gold:#FFD700;--gold2:#FFA500;--gold3:#FF8C00;--text:#E8EAED;--text2:#9CA3AF;--text3:#6B7280;--green:#10B981;--red:#EF4444;--blue:#3B82F6;--orange:#F59E0B;--radius:16px;--radius-sm:10px;--transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+.landing-page{background:var(--bg);overflow-x:hidden}
+.hero-section{padding:40px 20px 20px;max-width:480px;margin:0 auto;text-align:center}
+.hero-logo{margin-bottom:24px}
+.hero-logo-icon{width:72px;height:72px;background:linear-gradient(135deg,#FFD700,#FF8C00);border-radius:22px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
+.hero-logo-icon svg{width:36px;height:36px;color:#000}
+.hero-title{font-size:36px;font-weight:900;background:linear-gradient(135deg,#FFD700,#FF8C00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.hero-tagline{font-size:15px;color:#9CA3AF}
+.landing-login-card{background:#161C2E;border:1px solid #1E2A45;border-radius:20px;padding:20px;margin-bottom:20px;text-align:left}
+.login-card-tabs{display:flex;gap:4px;background:#0A0E1A;border-radius:12px;padding:4px;margin-bottom:16px}
+.tab-btn{flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:600;color:#6B7280;transition:all 0.3s}
+.tab-btn.active{background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000}
+.form-group{margin-bottom:16px}
+.form-label{display:block;margin-bottom:6px;font-weight:500;color:#9CA3AF;font-size:13px}
+.input-wrapper{position:relative;display:flex;align-items:center}
+.input-wrapper .form-input{padding-left:44px}
+.input-icon{position:absolute;left:14px;width:18px;height:18px;color:#6B7280;flex-shrink:0}
+.form-input{width:100%;padding:12px 16px;background:#141928;border:1.5px solid #1E2A45;border-radius:10px;color:#E8EAED;font-size:14px;outline:none}
+.form-input:focus{border-color:#FFD700}
+.input-toggle-pw{position:absolute;right:14px;color:#6B7280;display:flex}
+.input-toggle-pw svg{width:18px;height:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;border:2px solid transparent;width:auto}
+.btn-full{width:100%}
+.btn-lg{padding:14px 24px;font-size:16px;border-radius:16px}
+.btn-primary{background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000;font-weight:700}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 0 20px rgba(255,215,0,0.3)}
+.btn-outline{background:transparent;border-color:#1E2A45;color:#E8EAED}
+.btn-outline:hover{border-color:#FFD700;color:#FFD700}
+.btn svg{width:18px;height:18px}
+.captcha-wrapper{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.captcha-display{background:#141928;border:1.5px solid #1E2A45;border-radius:8px;padding:10px 16px;font-family:monospace;font-size:20px;font-weight:700;letter-spacing:6px;color:#FFD700;flex:1;text-align:center;user-select:none}
+.captcha-refresh{background:#141928;border:1.5px solid #1E2A45;border-radius:8px;padding:10px;color:#9CA3AF;flex-shrink:0}
+.captcha-row{display:flex;align-items:center;gap:8px}
+.captcha-input{max-width:100px;text-align:center;letter-spacing:4px;font-weight:700}
+.text-gold{color:#FFD700}
+.text-sm{font-size:12px}
+.text-center{text-align:center}
+.mt-2{margin-top:8px}.mt-3{margin-top:16px}.mb-3{margin-bottom:16px}
+.landing-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:20px}
+.lstat{background:#161C2E;border:1px solid #1E2A45;border-radius:12px;padding:10px 6px;text-align:center}
+.lstat-num{display:block;font-size:14px;font-weight:800;color:#FFD700}
+.lstat-label{display:block;font-size:9px;color:#6B7280;margin-top:2px}
+.landing-section{padding:32px 20px;max-width:480px;margin:0 auto}
+.bg-section{background:#161C2E}
+.section-title{font-size:22px;font-weight:800;text-align:center;margin-bottom:24px}
+.features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.feature-card{background:#161C2E;border:1px solid #1E2A45;border-radius:16px;padding:16px;text-align:center}
+.feature-icon{width:44px;height:44px;background:rgba(255,215,0,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.feature-icon svg{width:22px;height:22px;color:#FFD700}
+.feature-card h3{font-size:13px;font-weight:700;margin-bottom:6px}
+.feature-card p{font-size:11px;color:#9CA3AF;line-height:1.5}
+.steps-list{display:flex;flex-direction:column;gap:12px}
+.step-item{display:flex;align-items:center;gap:14px;padding:12px;background:#161C2E;border-radius:14px;border:1px solid #1E2A45}
+.step-num{width:36px;height:36px;background:linear-gradient(135deg,#FFD700,#FF8C00);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#000;flex-shrink:0}
+.step-content h4{font-size:14px;font-weight:700;margin-bottom:2px}
+.step-content p{font-size:12px;color:#9CA3AF}
+.cta-section{text-align:center}
+.cta-title{font-size:24px;font-weight:800;margin-bottom:8px}
+.cta-desc{font-size:13px;color:#9CA3AF;margin-bottom:20px}
+.landing-footer{padding:24px 20px;text-align:center;color:#6B7280;font-size:12px;border-top:1px solid #1E2A45}
+.footer-links{display:flex;justify-content:center;gap:16px;margin-top:8px}
+.footer-links a{color:#6B7280;font-size:12px}
+.register-quick{text-align:center;padding:10px 0}
+.register-bonus-badge{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:12px;color:#FFD700;font-weight:600;font-size:14px}
+.register-note{font-size:12px;color:#6B7280;margin-top:8px}
+.toast-container{position:fixed;top:20px;right:16px;z-index:400;display:flex;flex-direction:column;gap:8px;max-width:300px}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#161C2E;border:1px solid #1E2A45;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.4);font-size:13px;animation:slideInRight 0.3s ease;min-width:200px}
+.toast svg{width:18px;height:18px;flex-shrink:0}
+.toast-success{border-color:rgba(16,185,129,0.3);color:#10B981}
+.toast-error{border-color:rgba(239,68,68,0.3);color:#EF4444}
+.toast-warning{border-color:rgba(245,158,11,0.3);color:#F59E0B}
+@keyframes slideInRight{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.animate-fadeInDown{animation:fadeInDown 0.5s ease forwards}
+.animate-fadeInUp{animation:fadeInUp 0.5s ease forwards}
+.animate-pulse{animation:pulse 2s ease-in-out infinite}
+.pulse-glow{animation:pulseGlow 2s ease-in-out infinite}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 10px rgba(255,215,0,0.3)}50%{box-shadow:0 0 25px rgba(255,215,0,0.6)}}
+.checkbox-wrapper{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.checkbox-wrapper input[type="checkbox"]{width:18px;height:18px;accent-color:#FFD700;flex-shrink:0;margin-top:2px}
+.checkbox-label{font-size:13px;color:#9CA3AF}
+.about-platform-link{display:flex;align-items:center;justify-content:center;gap:8px;color:#9CA3AF;font-size:13px;margin-top:12px}
+.about-platform-link:hover{color:#FFD700}
+.about-platform-link svg{width:16px;height:16px}
+.lstat-div{width:1px;background:#1E2A45}
+#particles-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+</style>
 </head>
 <body class="theme-dark landing-page">
 <div id="particles-bg"></div>
