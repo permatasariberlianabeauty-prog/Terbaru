@@ -750,21 +750,105 @@ document.addEventListener('DOMContentLoaded',()=>{
 }
 </script>
 <script>
-(function tryLucide(){if(typeof lucide!=="undefined"){lucide.createIcons();}else{setTimeout(tryLucide,50);}})();
+/* Init lucide icons */
+(function tryLucide(){if(typeof lucide!=='undefined'){lucide.createIcons();}else{setTimeout(tryLucide,50);}})();
+
 window.NOXARA = { appUrl: '<?= APP_URL ?>' };
-initCaptcha('Landing');
-animateCounters();
-initParticlesBg();
-function switchTab(t) {
-  document.getElementById('formLogin').style.display = t==='login'?'block':'none';
-  document.getElementById('formRegister').style.display = t==='register'?'block':'none';
-  document.getElementById('tabLogin').classList.toggle('active', t==='login');
-  document.getElementById('tabRegister').classList.toggle('active', t==='register');
+
+/* ---- CAPTCHA (inline - tidak bergantung file eksternal) ---- */
+var _captchaCode = '';
+function refreshCaptcha(suffix) {
+  suffix = suffix || '';
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  _captchaCode = '';
+  for (var i = 0; i < 5; i++) _captchaCode += chars[Math.floor(Math.random() * chars.length)];
+  var display = document.getElementById('captchaDisplay' + suffix);
+  var key     = document.getElementById('captchaKey' + suffix);
+  if (display) {
+    display.innerHTML = '';
+    for (var j = 0; j < _captchaCode.length; j++) {
+      var span = document.createElement('span');
+      span.textContent = _captchaCode[j];
+      span.style.cssText = 'color:hsl(' + (45 + j * 20) + ',90%,65%);transform:rotate(' + ((Math.random() - 0.5) * 15) + 'deg);display:inline-block;margin:0 1px;font-style:italic';
+      display.appendChild(span);
+    }
+  }
+  if (key) key.value = btoa(_captchaCode);
 }
-document.getElementById('landingLoginForm').addEventListener('submit', function(e) {
-  const input  = document.getElementById('captchaInputLanding').value.trim().toUpperCase();
-  const stored = atob(document.getElementById('captchaKeyLanding').value);
-  if (input !== stored) { e.preventDefault(); showToast('Kode verifikasi salah!','error'); refreshCaptcha('Landing'); document.getElementById('captchaInputLanding').value=''; }
+function initCaptcha(suffix) { refreshCaptcha(suffix || ''); }
+
+/* Run captcha when DOM is ready */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() { refreshCaptcha('Landing'); });
+} else {
+  refreshCaptcha('Landing');
+}
+
+/* ---- Tab switcher ---- */
+function switchTab(t) {
+  document.getElementById('formLogin').style.display     = t === 'login' ? 'block' : 'none';
+  document.getElementById('formRegister').style.display  = t === 'register' ? 'block' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active', t === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', t === 'register');
+}
+
+/* ---- Toggle password ---- */
+function togglePw(id, btn) {
+  var input = document.getElementById(id);
+  if (!input) return;
+  var hide = input.type === 'password';
+  input.type = hide ? 'text' : 'password';
+  btn.innerHTML = hide ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+  if (typeof lucide !== 'undefined') lucide.createIcons({nodes: [btn]});
+}
+
+/* ---- Counter animation ---- */
+function animateCounters() {
+  document.querySelectorAll('[data-target]').forEach(function(el) {
+    var target = parseInt(el.dataset.target);
+    var prefix = el.dataset.prefix || '';
+    var suffix = el.dataset.suffix || '';
+    var current = 0, step = target / 60;
+    var timer = setInterval(function() {
+      current += step;
+      if (current >= target) { current = target; clearInterval(timer); }
+      el.textContent = prefix + Math.floor(current).toLocaleString('id-ID') + suffix;
+    }, 25);
+  });
+}
+
+/* ---- Toast ---- */
+function showToast(msg, type) {
+  type = type || 'info';
+  var c = document.getElementById('toastContainer');
+  if (!c) return;
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.innerHTML = '<span>' + msg + '</span>';
+  c.appendChild(t);
+  setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 3000);
+}
+
+/* ---- Form submit ---- */
+document.addEventListener('DOMContentLoaded', function() {
+  var form = document.getElementById('landingLoginForm');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      var inputEl  = document.getElementById('captchaInputLanding');
+      var keyEl    = document.getElementById('captchaKeyLanding');
+      if (!inputEl || !keyEl || !keyEl.value) return;
+      var input  = inputEl.value.trim().toUpperCase();
+      var stored = '';
+      try { stored = atob(keyEl.value); } catch(err) { stored = ''; }
+      if (!stored || input !== stored) {
+        e.preventDefault();
+        showToast('Kode verifikasi salah!', 'error');
+        refreshCaptcha('Landing');
+        inputEl.value = '';
+      }
+    });
+  }
+  animateCounters();
 });
 </script>
 </body>

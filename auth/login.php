@@ -194,7 +194,12 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 <script src="<?php echo APP_URL; ?>/assets/js/main.js"></script>
 <script src="<?php echo APP_URL; ?>/assets/js/animations.js"></script>
 <script>
-(function tryLucide(){if(typeof lucide!=="undefined"){lucide.createIcons();}else{setTimeout(tryLucide,50);}})();
+/* Init lucide setelah defer load selesai */
+(function tryLucide(){
+    if(typeof lucide!=='undefined'){ lucide.createIcons(); }
+    else { setTimeout(tryLucide, 50); }
+})();
+
 window.NOXARA = { appUrl: '<?php echo APP_URL; ?>' };
 
 function showToast(msg, type) {
@@ -213,7 +218,9 @@ function togglePw(id, btn) {
     if (!input) return;
     var isHidden = input.type === 'password';
     input.type = isHidden ? 'text' : 'password';
-    btn.innerHTML = isHidden ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
+    btn.innerHTML = isHidden
+        ? '<i data-lucide="eye-off" style="width:18px;height:18px;display:block"></i>'
+        : '<i data-lucide="eye" style="width:18px;height:18px;display:block"></i>';
     if (typeof lucide !== 'undefined') lucide.createIcons({nodes:[btn]});
 }
 
@@ -224,26 +231,40 @@ function refreshCaptcha() {
     var display = document.getElementById('captchaDisplay');
     var key = document.getElementById('captchaKey');
     if (display) {
-        display.textContent = '';
+        display.innerHTML = '';
         for (var j = 0; j < code.length; j++) {
             var span = document.createElement('span');
             span.textContent = code[j];
-            span.style.cssText = 'color:hsl(' + (45 + j * 20) + ',90%,65%);transform:rotate(' + ((Math.random() - 0.5) * 15) + 'deg);display:inline-block;margin:0 1px';
+            span.style.cssText = 'color:hsl(' + (45 + j * 20) + ',90%,65%);transform:rotate(' + ((Math.random() - 0.5) * 15) + 'deg);display:inline-block;margin:0 1px;font-style:italic';
             display.appendChild(span);
         }
     }
     if (key) key.value = btoa(code);
 }
-refreshCaptcha();
+
+/* Run captcha immediately when DOM ready */
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', refreshCaptcha);
+} else {
+    refreshCaptcha();
+}
 
 document.getElementById('loginForm').addEventListener('submit', function(e) {
-    var input = document.getElementById('captchaInput').value.trim().toUpperCase();
-    var stored = atob(document.getElementById('captchaKey').value);
-    if (input !== stored) {
+    var inputEl = document.getElementById('captchaInput');
+    var keyEl   = document.getElementById('captchaKey');
+    if (!inputEl || !keyEl || !keyEl.value) {
+        e.preventDefault();
+        showToast('Kode verifikasi belum dimuat. Refresh halaman.', 'error');
+        return;
+    }
+    var input  = inputEl.value.trim().toUpperCase();
+    var stored = '';
+    try { stored = atob(keyEl.value); } catch(err) { stored = ''; }
+    if (!stored || input !== stored) {
         e.preventDefault();
         showToast('Kode verifikasi salah!', 'error');
         refreshCaptcha();
-        document.getElementById('captchaInput').value = '';
+        inputEl.value = '';
     }
 });
 </script>
