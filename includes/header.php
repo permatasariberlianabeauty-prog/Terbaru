@@ -24,22 +24,9 @@ $userLang    = $user['lang'] ?? 'id';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<?php
-// Relative path dari halaman saat ini ke root project
-// Contoh: /pages/dashboard.php -> '../'
-// Contoh: /index.php -> ''
-// Contoh: /adm-noxara/index.php -> '../'
-$_scriptRelPath = str_replace(
-    str_replace('\\','/',rtrim($_SERVER['DOCUMENT_ROOT'],'/\\')) . '/',
-    '',
-    str_replace('\\','/',dirname($_SERVER['SCRIPT_FILENAME'])) . '/'
-);
-$_assetDepth = max(0, substr_count(trim($_scriptRelPath,'/'), '/') + (strlen(trim($_scriptRelPath,'/')) > 0 ? 1 : 0));
-$_relBase = str_repeat('../', $_assetDepth);
-?>
-<link rel="stylesheet" href="<?= $_relBase ?>assets/css/style.css">
-<link rel="stylesheet" href="<?= $_relBase ?>assets/css/mobile.css">
-<link rel="stylesheet" href="<?= $_relBase ?>assets/css/animations.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/mobile.css">
+<link rel="stylesheet" href="/assets/css/animations.css">
 </head>
 <body class="theme-<?= $userTheme ?>">
 <div id="app">
