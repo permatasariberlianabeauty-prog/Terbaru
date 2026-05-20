@@ -33,8 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>Lupa Password - <?= APP_NAME ?></title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
+<script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js" defer></script>
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mobile.css">
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/animations.css">
@@ -170,7 +173,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
   </div>
 </div>
 <script src="<?= $baseUrl ?>/assets/js/main.js"></script>
-<script>lucide.createIcons(); window.NOXARA={appUrl:'<?=APP_URL?>'};</script>
+<script>(function tryLucide(){if(typeof lucide!=="undefined"){lucide.createIcons();}else{setTimeout(tryLucide,50);}})(); window.NOXARA={appUrl:'<?=APP_URL?>'};</script>
 
 <script>
 // ============================================================

@@ -5,7 +5,7 @@
 <script src="<?=APP_URL?>/assets/js/main.js"></script>
 <script src="<?=APP_URL?>/assets/js/animations.js"></script>
 <script>
-lucide.createIcons();
+(function tryLucide(){if(typeof lucide!=="undefined"){lucide.createIcons();}else{setTimeout(tryLucide,50);}})();
 window.NOXARA={appUrl:'<?=APP_URL?>',isAdmin:true};
 function toggleAdminMenu(){
   document.getElementById('adminSidebar').classList.toggle('open');

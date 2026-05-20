@@ -36,7 +36,7 @@ $where="WHERE 1=1";
 if($search) $where.=" AND (username LIKE '%".dbEscape($search)."%' OR full_name LIKE '%".dbEscape($search)."%' OR email LIKE '%".dbEscape($search)."%' OR phone LIKE '%".dbEscape($search)."%')";
 if($status!=='all') $where.=" AND status='".dbEscape($status)."'";
 if($vip!=='all') $where.=" AND vip_level=".dbEscape($vip);
-$total=(int)(dbQuery("SELECT COUNT(*) as c FROM users $where")->fetch_assoc()['c']??0);
+$_r=dbQuery("SELECT COUNT(*) as c FROM users $where"); $total=$_r?(int)$_r->fetch_assoc()['c']:0;
 $users=dbQuery("SELECT * FROM users $where ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
 ?>
 <div class="admin-page-header"><h1>Manajemen Member <span class="badge-count"><?=$total?></span></h1></div>

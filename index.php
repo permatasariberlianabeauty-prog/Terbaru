@@ -16,8 +16,11 @@ $baseUrl = defined('APP_URL') ? APP_URL : $protocol . '://' . $host;
 <meta name="theme-color" content="#0A0E1A">
 <meta name="description" content="Noxara - Platform Mining Rupiah Terpercaya. Invest Smarter, Grow Faster.">
 <title><?= APP_NAME ?> - <?= getSetting('site_tagline', APP_TAGLINE) ?></title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
+<script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js" defer></script>
 <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/style.css">
 <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/mobile.css">
 <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/animations.css">
@@ -747,7 +750,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 }
 </script>
 <script>
-lucide.createIcons();
+(function tryLucide(){if(typeof lucide!=="undefined"){lucide.createIcons();}else{setTimeout(tryLucide,50);}})();
 window.NOXARA = { appUrl: '<?= APP_URL ?>' };
 initCaptcha('Landing');
 animateCounters();

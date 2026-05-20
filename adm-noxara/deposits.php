@@ -4,10 +4,10 @@ $adminPageTitle='Manajemen Deposit'; $currentAdminPage='deposits';
 include __DIR__.'/_header.php';
 $status=sanitize($_GET['status']??'all'); $page=max(1,(int)($_GET['p']??1)); $limit=20; $offset=($page-1)*$limit;
 $where="WHERE 1=1"; if($status!=='all') $where.=" AND d.status='".dbEscape($status)."'";
-$total=(int)(dbQuery("SELECT COUNT(*) as c FROM deposits d $where")->fetch_assoc()['c']??0);
+$_r=dbQuery("SELECT COUNT(*) as c FROM deposits d $where"); $total=$_r?(int)$_r->fetch_assoc()['c']:0;
 $deps=dbQuery("SELECT d.*,u.username FROM deposits d JOIN users u ON d.user_id=u.id $where ORDER BY d.created_at DESC LIMIT $limit OFFSET $offset");
-$todayTotal=dbQuery("SELECT COALESCE(SUM(original_amount),0) as t FROM deposits WHERE status='paid' AND DATE(created_at)=CURDATE()")->fetch_assoc()['t']??0;
-$totalAll=dbQuery("SELECT COALESCE(SUM(original_amount),0) as t FROM deposits WHERE status='paid'")->fetch_assoc()['t']??0;
+$_rt=dbQuery("SELECT COALESCE(SUM(original_amount),0) as t FROM deposits WHERE status='paid' AND DATE(created_at)=CURDATE()"); $todayTotal=$_rt?(float)$_rt->fetch_assoc()['t']:0;
+$_ra=dbQuery("SELECT COALESCE(SUM(original_amount),0) as t FROM deposits WHERE status='paid'"); $totalAll=$_ra?(float)$_ra->fetch_assoc()['t']:0;
 ?>
 <div class="admin-page-header"><h1>Manajemen Deposit</h1></div>
 <div class="admin-stats-grid">

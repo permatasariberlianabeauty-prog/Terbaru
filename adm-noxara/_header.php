@@ -1,16 +1,18 @@
 <?php
 if(!defined('APP_NAME')) require_once __DIR__.'/../config/bootstrap.php';
 requireAdmin();
-$adminUsername=$_SESSION['admin_username']??'Admin';
-$adminPageTitle=$adminPageTitle??'Dashboard';
-$pendingWd=(int)(dbQuery("SELECT COUNT(*) as c FROM withdrawals WHERE status='pending'")->fetch_assoc()['c']??0);
-$pendingChat=(int)(dbQuery("SELECT COUNT(*) as c FROM live_chats WHERE sender='user' AND is_read=0")->fetch_assoc()['c']??0);
+$adminUsername = isset($_SESSION['admin_username']) ? $_SESSION['admin_username'] : 'Admin';
+$adminPageTitle = isset($adminPageTitle) ? $adminPageTitle : 'Dashboard';
+$_wr = dbQuery("SELECT COUNT(*) as c FROM withdrawals WHERE status='pending'");
+$pendingWd = $_wr ? (int)$_wr->fetch_assoc()['c'] : 0;
+$_cr = dbQuery("SELECT COUNT(*) as c FROM live_chats WHERE sender='user' AND is_read=0");
+$pendingChat = $_cr ? (int)$_cr->fetch_assoc()['c'] : 0;
 ?>
 <!DOCTYPE html><html lang="id" data-theme="dark"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title><?=htmlspecialchars($adminPageTitle)?> - Admin <?=APP_NAME?></title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js" defer></script>
 <link rel="stylesheet" href="<?=APP_URL?>/assets/css/style.css">
 <link rel="stylesheet" href="<?=APP_URL?>/assets/css/mobile.css">
 <link rel="stylesheet" href="<?=APP_URL?>/assets/css/animations.css">

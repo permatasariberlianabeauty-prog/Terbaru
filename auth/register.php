@@ -1,43 +1,48 @@
 <?php
+// ============================================================
+// NOXARA - auth/register.php
+// ============================================================
 require_once __DIR__ . '/../config/bootstrap.php';
+
 if (isLoggedIn()) redirect(APP_URL . '/pages/dashboard.php');
 
-$error = '';
-$refCode = sanitize($_GET['ref'] ?? '');
+$error   = '';
+$refCode = isset($_GET['ref']) ? sanitize($_GET['ref']) : '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
-    $username  = sanitize($_POST['username'] ?? '');
-    $fullname  = sanitize($_POST['full_name'] ?? '');
-    $phone     = sanitize($_POST['phone'] ?? '');
-    $email     = sanitize($_POST['email'] ?? '');
-    $password  = $_POST['password'] ?? '';
-    $confirm   = $_POST['confirm_password'] ?? '';
-    $ref       = sanitize($_POST['referral_code'] ?? '');
-    $terms     = $_POST['terms'] ?? '';
 
-    if (!$username||!$fullname||!$phone||!$email||!$password||!$confirm)
+    $username = sanitize(isset($_POST['username'])         ? $_POST['username']         : '');
+    $fullname = sanitize(isset($_POST['full_name'])        ? $_POST['full_name']        : '');
+    $phone    = sanitize(isset($_POST['phone'])            ? $_POST['phone']            : '');
+    $email    = sanitize(isset($_POST['email'])            ? $_POST['email']            : '');
+    $password = isset($_POST['password'])                  ? $_POST['password']         : '';
+    $confirm  = isset($_POST['confirm_password'])          ? $_POST['confirm_password'] : '';
+    $ref      = sanitize(isset($_POST['referral_code'])    ? $_POST['referral_code']    : '');
+    $terms    = isset($_POST['terms'])                     ? $_POST['terms']            : '';
+
+    if (!$username || !$fullname || !$phone || !$email || !$password || !$confirm) {
         $error = 'Semua field wajib diisi';
-    elseif (!preg_match('/^[a-zA-Z0-9_]{3,20}$/', $username))
+    } elseif (!preg_match('/^[a-zA-Z0-9_]{3,20}$/', $username)) {
         $error = 'Username 3-20 karakter, hanya huruf, angka, dan underscore';
-    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL))
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Format email tidak valid';
-    elseif (!preg_match('/^[0-9]{9,15}$/', $phone))
-        $error = 'Nomor HP tidak valid';
-    elseif (strlen($password) < 6)
+    } elseif (!preg_match('/^[0-9]{9,15}$/', $phone)) {
+        $error = 'Nomor HP tidak valid (9-15 angka)';
+    } elseif (strlen($password) < 6) {
         $error = 'Password minimal 6 karakter';
-    elseif ($password !== $confirm)
+    } elseif ($password !== $confirm) {
         $error = 'Konfirmasi password tidak cocok';
-    elseif (!$terms)
+    } elseif (!$terms) {
         $error = 'Kamu harus menyetujui syarat & ketentuan';
-    else {
+    } else {
         $result = registerUser([
-            'username'  => $username,
-            'full_name' => $fullname,
-            'phone'     => $phone,
-            'email'     => $email,
-            'password'  => $password,
-            'referral_code' => $ref
+            'username'     => $username,
+            'full_name'    => $fullname,
+            'phone'        => $phone,
+            'email'        => $email,
+            'password'     => $password,
+            'referral_code'=> $ref,
         ]);
         if ($result['success']) {
             $_SESSION['user_id'] = $result['user_id'];
@@ -47,245 +52,225 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+$regBonus = formatRupiah((float)getSetting('register_bonus', '15000'));
 ?>
 <!DOCTYPE html>
 <html lang="id" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Daftar - <?php echo APP_NAME; ?></title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/style.css">
-<link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/mobile.css">
-<link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/animations.css">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:#0A0E1A;color:#E8EAED;font-family:Inter,-apple-system,sans-serif;min-height:100vh;overflow-x:hidden}
-a{text-decoration:none;color:inherit}
-button{cursor:pointer;border:none;background:none;font-family:inherit}
-.auth-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at top,rgba(255,215,0,0.05),transparent 60%)}
-.auth-container{width:100%;max-width:400px}
-.auth-logo{text-align:center;margin-bottom:24px}
-.logo-icon{width:64px;height:64px;background:linear-gradient(135deg,#FFD700,#FF8C00);border-radius:18px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
-.logo-icon svg{width:32px;height:32px;color:#000}
-.logo-text{font-size:28px;font-weight:900;background:linear-gradient(135deg,#FFD700,#FF8C00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.logo-tagline{color:#9CA3AF;font-size:13px;margin-top:4px}
-.auth-card{background:#161C2E;border:1px solid #1E2A45;border-radius:16px;padding:24px;margin-bottom:16px}
-.auth-title{font-size:20px;font-weight:700;margin-bottom:4px}
-.auth-subtitle{color:#9CA3AF;font-size:13px;margin-bottom:20px}
-.form-group{margin-bottom:14px}
-.form-label{display:block;margin-bottom:6px;font-weight:500;color:#9CA3AF;font-size:13px}
-.form-input{width:100%;padding:12px 16px;background:#141928;border:1.5px solid #1E2A45;border-radius:10px;color:#E8EAED;font-size:16px;outline:none}
-.form-input:focus{border-color:#FFD700}
-.form-input::placeholder{color:#6B7280}
-.input-wrapper{position:relative;display:flex;align-items:center}
-.input-wrapper .form-input{padding-left:44px}
-.input-icon{position:absolute;left:14px;width:18px;height:18px;color:#6B7280}
-.input-toggle-pw{position:absolute;right:14px;color:#6B7280;display:flex;cursor:pointer}
-.input-toggle-pw svg{width:18px;height:18px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;border:2px solid transparent;width:auto}
-.btn-full{width:100%}
-.btn-primary{background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000;font-weight:700}
-.btn-outline{background:transparent;border:2px solid #1E2A45;color:#E8EAED}
-.btn svg{width:18px;height:18px}
-.alert{padding:12px 16px;border-radius:10px;display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:16px}
-.alert svg{width:18px;height:18px;flex-shrink:0}
-.alert-error{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#FCA5A5}
-.captcha-wrapper{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.captcha-display{background:#141928;border:1.5px solid #1E2A45;border-radius:8px;padding:10px 16px;font-family:monospace;font-size:20px;font-weight:700;letter-spacing:6px;color:#FFD700;flex:1;text-align:center;user-select:none}
-.captcha-refresh{background:#141928;border:1.5px solid #1E2A45;border-radius:8px;padding:10px;color:#9CA3AF;flex-shrink:0;cursor:pointer}
-.captcha-refresh svg{width:18px;height:18px}
-.mt-2{margin-top:8px}.mb-3{margin-bottom:16px}
-.text-gold{color:#FFD700}
-.text-sm{font-size:12px}
-.text-center{text-align:center}
-.required{color:#EF4444}
-.checkbox-wrapper{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
-.checkbox-wrapper input[type="checkbox"]{width:18px;height:18px;accent-color:#FFD700;flex-shrink:0;margin-top:2px}
-.checkbox-label{font-size:13px;color:#9CA3AF}
-.auth-links{text-align:center;margin-top:16px}
-.auth-link{color:#9CA3AF;font-size:13px;display:inline-flex;align-items:center;gap:6px}
-.toast-container{position:fixed;top:20px;right:16px;z-index:400;display:flex;flex-direction:column;gap:8px}
-.toast{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#161C2E;border:1px solid #1E2A45;border-radius:12px;font-size:13px;min-width:200px}
-.toast-error{border-color:rgba(239,68,68,0.3);color:#EF4444}
-.toast-success{border-color:rgba(16,185,129,0.3);color:#10B981}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.animate-fadeInUp{animation:fadeInUp 0.5s ease forwards}
-.animate-fadeInDown{animation:fadeInUp 0.5s ease forwards}
-.animate-shake{animation:shake 0.4s ease}
-</style>
+<meta name="theme-color" content="#0A0E1A">
+<title>Daftar Gratis - <?= APP_NAME ?></title>
+<?php include __DIR__ . '/../includes/head_assets.php'; ?>
 </head>
-<body class="theme-dark auth-page">
-<div class="auth-bg">
-  <div class="auth-container">
-    <div class="auth-logo animate-fadeInDown">
-      <div class="logo-icon"><i data-lucide="zap"></i></div>
-      <h1 class="logo-text"><?php echo APP_NAME; ?></h1>
-      <p class="logo-tagline">Daftar Gratis &amp; Dapat Bonus <?php echo formatRupiah((float)getSetting('register_bonus','15000')); ?></p>
+<body class="theme-dark">
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at top,rgba(255,215,0,0.05),transparent 60%)">
+  <div style="width:100%;max-width:400px">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="width:64px;height:64px;background:linear-gradient(135deg,#FFD700,#FF8C00);border-radius:18px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px">
+        <i data-lucide="zap" style="width:32px;height:32px;color:#000"></i>
+      </div>
+      <h1 style="font-size:28px;font-weight:900;background:linear-gradient(135deg,#FFD700,#FF8C00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text"><?= APP_NAME ?></h1>
+      <p style="color:#9CA3AF;font-size:13px;margin-top:4px">Daftar Gratis &amp; Dapat Bonus <?= $regBonus ?></p>
     </div>
 
-    <div class="auth-card animate-fadeInUp">
-      <h2 class="auth-title">Buat Akun Baru</h2>
+    <!-- Card -->
+    <div class="auth-card" style="background:#161C2E;border:1px solid #1E2A45;border-radius:16px;padding:24px;margin-bottom:16px">
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:16px">Buat Akun Baru</h2>
+
       <?php if ($error): ?>
-      <div class="alert alert-error animate-shake">
-        <i data-lucide="alert-circle"></i> <?php echo htmlspecialchars($error); ?>
+      <div class="alert alert-error" style="padding:12px 16px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#FCA5A5;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:8px;font-size:13px">
+        <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0"></i>
+        <?= htmlspecialchars($error) ?>
       </div>
       <?php endif; ?>
 
-      <form method="POST" id="registerForm" autocomplete="off">
-        <?php echo csrfField(); ?>
-        <div class="form-group">
-          <label class="form-label">Username <span class="required">*</span></label>
-          <div class="input-wrapper">
-            <i data-lucide="at-sign" class="input-icon"></i>
-            <input type="text" name="username" class="form-input" placeholder="Buat username unik" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" required>
+      <form method="POST" id="regForm" autocomplete="off">
+        <?= csrfField() ?>
+
+        <?php
+        $fields = [
+            ['username',         'text',     'at-sign',      'Username *',        'Buat username unik (3-20 karakter)'],
+            ['full_name',        'text',     'user',         'Nama Lengkap *',    'Nama sesuai KTP'],
+            ['phone',            'tel',      'phone',        'Nomor WhatsApp *',  'Contoh: 08123456789'],
+            ['email',            'email',    'mail',         'Email *',           'Masukkan email aktif'],
+        ];
+        foreach ($fields as $f):
+            $val = htmlspecialchars(isset($_POST[$f[0]]) ? $_POST[$f[0]] : '');
+        ?>
+        <div style="margin-bottom:12px">
+          <label style="display:block;margin-bottom:5px;font-size:13px;color:#9CA3AF"><?= $f[3] ?></label>
+          <div style="position:relative;display:flex;align-items:center">
+            <i data-lucide="<?= $f[2] ?>" style="position:absolute;left:14px;width:16px;height:16px;color:#6B7280"></i>
+            <input type="<?= $f[1] ?>" name="<?= $f[0] ?>" value="<?= $val ?>"
+              placeholder="<?= $f[4] ?>" required
+              style="width:100%;padding:11px 16px 11px 42px;background:#141928;border:1.5px solid #1E2A45;border-radius:10px;color:#E8EAED;font-size:15px;outline:none">
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Nama Lengkap <span class="required">*</span></label>
-          <div class="input-wrapper">
-            <i data-lucide="user" class="input-icon"></i>
-            <input type="text" name="full_name" class="form-input" placeholder="Nama sesuai KTP" value="<?php echo htmlspecialchars($_POST['full_name'] ?? ''); ?>" required>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nomor WhatsApp <span class="required">*</span></label>
-          <div class="input-wrapper">
-            <i data-lucide="phone" class="input-icon"></i>
-            <input type="tel" name="phone" class="form-input" placeholder="Contoh: 08123456789" value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>" required>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Email <span class="required">*</span></label>
-          <div class="input-wrapper">
-            <i data-lucide="mail" class="input-icon"></i>
-            <input type="email" name="email" class="form-input" placeholder="Masukkan email aktif" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Password <span class="required">*</span></label>
-          <div class="input-wrapper">
-            <i data-lucide="lock" class="input-icon"></i>
-            <input type="password" name="password" id="regPw" class="form-input" placeholder="Minimal 6 karakter" required>
-            <button type="button" class="input-toggle-pw" onclick="togglePw('regPw',this)">
-              <i data-lucide="eye"></i>
+        <?php endforeach; ?>
+
+        <!-- Password -->
+        <div style="margin-bottom:12px">
+          <label style="display:block;margin-bottom:5px;font-size:13px;color:#9CA3AF">Password * (min 6 karakter)</label>
+          <div style="position:relative;display:flex;align-items:center">
+            <i data-lucide="lock" style="position:absolute;left:14px;width:16px;height:16px;color:#6B7280"></i>
+            <input type="password" name="password" id="pw1" required placeholder="Minimal 6 karakter"
+              style="width:100%;padding:11px 44px 11px 42px;background:#141928;border:1.5px solid #1E2A45;border-radius:10px;color:#E8EAED;font-size:15px;outline:none">
+            <button type="button" onclick="tpw('pw1',this)" style="position:absolute;right:12px;color:#6B7280;background:none;border:none;cursor:pointer;display:flex">
+              <i data-lucide="eye" style="width:18px;height:18px"></i>
             </button>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Konfirmasi Password <span class="required">*</span></label>
-          <div class="input-wrapper">
-            <i data-lucide="lock" class="input-icon"></i>
-            <input type="password" name="confirm_password" id="regPwConf" class="form-input" placeholder="Ulangi password" required>
-            <button type="button" class="input-toggle-pw" onclick="togglePw('regPwConf',this)">
-              <i data-lucide="eye"></i>
+
+        <!-- Confirm Password -->
+        <div style="margin-bottom:12px">
+          <label style="display:block;margin-bottom:5px;font-size:13px;color:#9CA3AF">Konfirmasi Password *</label>
+          <div style="position:relative;display:flex;align-items:center">
+            <i data-lucide="lock" style="position:absolute;left:14px;width:16px;height:16px;color:#6B7280"></i>
+            <input type="password" name="confirm_password" id="pw2" required placeholder="Ulangi password"
+              style="width:100%;padding:11px 44px 11px 42px;background:#141928;border:1.5px solid #1E2A45;border-radius:10px;color:#E8EAED;font-size:15px;outline:none">
+            <button type="button" onclick="tpw('pw2',this)" style="position:absolute;right:12px;color:#6B7280;background:none;border:none;cursor:pointer;display:flex">
+              <i data-lucide="eye" style="width:18px;height:18px"></i>
             </button>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Verifikasi</label>
-          <div class="captcha-wrapper">
-            <div class="captcha-display" id="captchaDisplay"></div>
-            <button type="button" class="captcha-refresh" onclick="refreshCaptcha()">
-              <i data-lucide="refresh-cw"></i>
+
+        <!-- Captcha -->
+        <div style="margin-bottom:12px">
+          <label style="display:block;margin-bottom:5px;font-size:13px;color:#9CA3AF">Kode Verifikasi</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div id="captchaDisplay" style="flex:1;background:#141928;border:1.5px solid #1E2A45;border-radius:8px;padding:10px 16px;font-family:monospace;font-size:20px;font-weight:700;letter-spacing:6px;color:#FFD700;text-align:center;user-select:none"></div>
+            <button type="button" onclick="genCaptcha()" style="background:#141928;border:1.5px solid #1E2A45;border-radius:8px;padding:10px 14px;color:#9CA3AF;cursor:pointer">
+              <i data-lucide="refresh-cw" style="width:18px;height:18px"></i>
             </button>
           </div>
-          <div class="input-wrapper mt-2">
-            <i data-lucide="shield" class="input-icon"></i>
-            <input type="text" name="captcha" id="captchaInput" class="form-input" placeholder="Kode verifikasi" required>
+          <div style="position:relative;display:flex;align-items:center">
+            <i data-lucide="shield" style="position:absolute;left:14px;width:16px;height:16px;color:#6B7280"></i>
+            <input type="text" id="captchaInput" placeholder="Masukkan kode" required
+              style="width:100%;padding:11px 16px 11px 42px;background:#141928;border:1.5px solid #1E2A45;border-radius:10px;color:#E8EAED;font-size:15px;outline:none;letter-spacing:4px;font-weight:700">
           </div>
-          <input type="hidden" name="captcha_key" id="captchaKey">
+          <input type="hidden" id="captchaKey" name="captcha_key">
         </div>
-        <div class="form-group">
-          <label class="form-label">Kode Referral (Opsional)</label>
-          <div class="input-wrapper">
-            <i data-lucide="gift" class="input-icon"></i>
-            <input type="text" name="referral_code" class="form-input" placeholder="Kode referral teman" value="<?php echo htmlspecialchars($_POST['referral_code'] ?? $refCode); ?>">
+
+        <!-- Referral -->
+        <div style="margin-bottom:12px">
+          <label style="display:block;margin-bottom:5px;font-size:13px;color:#9CA3AF">Kode Referral (Opsional)</label>
+          <div style="position:relative;display:flex;align-items:center">
+            <i data-lucide="gift" style="position:absolute;left:14px;width:16px;height:16px;color:#6B7280"></i>
+            <input type="text" name="referral_code" value="<?= htmlspecialchars($refCode) ?>" placeholder="Kode referral teman"
+              style="width:100%;padding:11px 16px 11px 42px;background:#141928;border:1.5px solid #1E2A45;border-radius:10px;color:#E8EAED;font-size:15px;outline:none">
           </div>
         </div>
-        <div class="form-group">
-          <label class="checkbox-wrapper">
-            <input type="checkbox" name="terms" value="1" <?php echo isset($_POST['terms']) ? 'checked' : ''; ?> required>
-            <span class="checkbox-label">Saya menyetujui <a href="<?php echo APP_URL; ?>/pages/terms.php" target="_blank" class="text-gold">Syarat &amp; Ketentuan</a></span>
+
+        <!-- Terms -->
+        <div style="margin-bottom:16px;display:flex;align-items:flex-start;gap:10px">
+          <input type="checkbox" name="terms" id="terms" value="1" required
+            <?= isset($_POST['terms']) ? 'checked' : '' ?>
+            style="width:18px;height:18px;accent-color:#FFD700;margin-top:2px;flex-shrink:0">
+          <label for="terms" style="font-size:13px;color:#9CA3AF;cursor:pointer">
+            Saya menyetujui
+            <a href="<?= APP_URL ?>/pages/terms.php" target="_blank" style="color:#FFD700">Syarat &amp; Ketentuan</a>
           </label>
         </div>
-        <button type="submit" class="btn btn-primary btn-full">
-          <i data-lucide="user-check"></i> Daftar Sekarang
+
+        <button type="submit" id="regBtn"
+          style="width:100%;padding:14px;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000;font-weight:700;font-size:15px;border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <i data-lucide="user-check" style="width:18px;height:18px"></i>
+          Daftar Sekarang
         </button>
       </form>
 
-      <div class="auth-links">
-        <a href="<?php echo APP_URL; ?>/auth/login.php" class="auth-link">
-          <i data-lucide="log-in"></i> Sudah punya akun? Masuk
+      <div style="text-align:center;margin-top:16px">
+        <a href="<?= APP_URL ?>/auth/login.php" style="color:#9CA3AF;font-size:13px;display:inline-flex;align-items:center;gap:6px">
+          <i data-lucide="log-in" style="width:14px;height:14px"></i>
+          Sudah punya akun? Masuk
         </a>
       </div>
     </div>
+
   </div>
 </div>
-<div id="toastContainer" class="toast-container"></div>
-<script src="<?php echo APP_URL; ?>/assets/js/main.js"></script>
-<script src="<?php echo APP_URL; ?>/assets/js/animations.js"></script>
+
+<div id="toastCont" style="position:fixed;top:20px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px"></div>
+
+<script src="<?= APP_URL ?>/assets/js/main.js"></script>
 <script>
-lucide.createIcons();
-window.NOXARA = { appUrl: '<?php echo APP_URL; ?>' };
+// Init icons after lucide loads
+function initIcons() {
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    } else {
+        setTimeout(initIcons, 100);
+    }
+}
+initIcons();
 
-function showToast(msg, type) {
-    type = type || 'info';
-    var c = document.getElementById('toastContainer');
-    if (!c) return;
-    var t = document.createElement('div');
-    t.className = 'toast toast-' + type;
-    t.innerHTML = '<span>' + msg + '</span>';
-    c.appendChild(t);
-    setTimeout(function() { t.remove(); }, 3000);
+window.NOXARA = { appUrl: '<?= APP_URL ?>' };
+
+// Simple toast
+function toast(msg, type) {
+    var c = document.getElementById('toastCont');
+    var d = document.createElement('div');
+    d.style.cssText = 'padding:12px 16px;background:#161C2E;border:1px solid ' + (type==='error'?'rgba(239,68,68,.4)':'rgba(16,185,129,.4)') + ';color:' + (type==='error'?'#FCA5A5':'#6EE7B7') + ';border-radius:10px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);min-width:200px';
+    d.textContent = msg;
+    c.appendChild(d);
+    setTimeout(function() { if (d.parentNode) d.parentNode.removeChild(d); }, 3000);
 }
 
-function togglePw(id, btn) {
-    var input = document.getElementById(id);
-    if (!input) return;
-    var isHidden = input.type === 'password';
-    input.type = isHidden ? 'text' : 'password';
-    btn.innerHTML = isHidden ? '<i data-lucide="eye-off"></i>' : '<i data-lucide="eye"></i>';
-    if (typeof lucide !== 'undefined') lucide.createIcons({nodes:[btn]});
+// Toggle password
+function tpw(id, btn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.type = el.type === 'password' ? 'text' : 'password';
+    btn.innerHTML = el.type === 'text'
+        ? '<i data-lucide="eye-off" style="width:18px;height:18px"></i>'
+        : '<i data-lucide="eye" style="width:18px;height:18px"></i>';
+    if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [btn] });
 }
 
-function refreshCaptcha() {
+// Captcha
+var captchaCode = '';
+function genCaptcha() {
     var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    var code = '';
-    for (var i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    var display = document.getElementById('captchaDisplay');
-    var key = document.getElementById('captchaKey');
-    if (display) {
-        display.textContent = '';
-        for (var j = 0; j < code.length; j++) {
-            var span = document.createElement('span');
-            span.textContent = code[j];
-            span.style.cssText = 'color:hsl(' + (45 + j * 20) + ',90%,65%);transform:rotate(' + ((Math.random() - 0.5) * 15) + 'deg);display:inline-block;margin:0 1px';
-            display.appendChild(span);
+    captchaCode = '';
+    for (var i = 0; i < 5; i++) captchaCode += chars[Math.floor(Math.random() * chars.length)];
+    var d = document.getElementById('captchaDisplay');
+    if (d) {
+        d.innerHTML = '';
+        for (var j = 0; j < captchaCode.length; j++) {
+            var s = document.createElement('span');
+            s.textContent = captchaCode[j];
+            s.style.cssText = 'color:hsl(' + (45 + j * 20) + ',90%,65%);display:inline-block;margin:0 1px;transform:rotate(' + ((Math.random() - .5) * 15) + 'deg)';
+            d.appendChild(s);
         }
     }
-    if (key) key.value = btoa(code);
+    var k = document.getElementById('captchaKey');
+    if (k) k.value = btoa(captchaCode);
 }
-refreshCaptcha();
+genCaptcha();
 
-document.getElementById('registerForm').addEventListener('submit', function(e) {
-    var input = document.getElementById('captchaInput').value.trim().toUpperCase();
-    var stored = atob(document.getElementById('captchaKey').value);
-    if (input !== stored) {
+document.getElementById('regForm').addEventListener('submit', function(e) {
+    var inp = document.getElementById('captchaInput').value.trim().toUpperCase();
+    var key = document.getElementById('captchaKey').value;
+    if (!key || inp !== atob(key)) {
         e.preventDefault();
-        showToast('Kode verifikasi salah!', 'error');
-        refreshCaptcha();
+        toast('Kode verifikasi salah!', 'error');
+        genCaptcha();
         document.getElementById('captchaInput').value = '';
         return;
     }
-    var pw = document.getElementById('regPw').value;
-    var cf = document.getElementById('regPwConf').value;
+    var pw = document.getElementById('pw1').value;
+    var cf = document.getElementById('pw2').value;
     if (pw !== cf) {
         e.preventDefault();
-        showToast('Password tidak cocok!', 'error');
+        toast('Password tidak cocok!', 'error');
+        return;
     }
+    document.getElementById('regBtn').textContent = 'Mendaftar...';
+    document.getElementById('regBtn').disabled = true;
 });
 </script>
 </body>

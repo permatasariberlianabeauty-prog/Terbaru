@@ -1,0 +1,17 @@
+/* ============================================================
+   NOXARA - Font Stack (No External CDN - Fast Loading)
+   Uses system fonts as primary, Google Fonts as optional enhancement
+   ============================================================ */
+
+/* System font stack - instant loading */
+:root {
+    --font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+                 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+}
+
+body {
+    font-family: var(--font-sans);
+}
+
+/* Optional: Load Inter from Google with display=swap for non-blocking */
+/* This loads async and won't block page render */

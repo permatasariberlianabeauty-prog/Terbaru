@@ -28,12 +28,12 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&isAjax()){
 include __DIR__.'/_header.php';
 $status=sanitize($_GET['status']??'pending'); $page=max(1,(int)($_GET['p']??1)); $limit=20; $offset=($page-1)*$limit;
 $where="WHERE 1=1"; if($status!=='all') $where.=" AND w.status='".dbEscape($status)."'";
-$total=(int)(dbQuery("SELECT COUNT(*) as c FROM withdrawals w $where")->fetch_assoc()['c']??0);
+$_r=dbQuery("SELECT COUNT(*) as c FROM withdrawals w $where"); $total=$_r?(int)$_r->fetch_assoc()['c']:0;
 $wds=dbQuery("SELECT w.*,u.username,u.vip_level FROM withdrawals w JOIN users u ON w.user_id=u.id $where ORDER BY w.created_at DESC LIMIT $limit OFFSET $offset");
 ?>
 <div class="admin-page-header"><h1>Manajemen Penarikan</h1></div>
 <div class="admin-filters">
-  <a href="?status=pending" class="btn btn-sm <?=$status==='pending'?'btn-primary':'btn-outline'?>">Pending <?php $pc=dbQuery("SELECT COUNT(*) as c FROM withdrawals WHERE status='pending'")->fetch_assoc()['c']??0; if($pc>0):?><span class="nav-badge"><?=$pc?></span><?php endif;?></a>
+  <a href="?status=pending" class="btn btn-sm <?=$status==='pending'?'btn-primary':'btn-outline'?>">Pending <?php $pc=dbQuery("SELECT COUNT(*) as c FROM withdrawals WHERE status='pending'")->fetch_assoc(); $__r = $__r ? $__r['c'] : 0; if($pc>0):?><span class="nav-badge"><?=$pc?></span><?php endif;?></a>
   <a href="?status=success" class="btn btn-sm <?=$status==='success'?'btn-primary':'btn-outline'?>">Berhasil</a>
   <a href="?status=rejected" class="btn btn-sm <?=$status==='rejected'?'btn-primary':'btn-outline'?>">Ditolak</a>
   <a href="?status=all" class="btn btn-sm <?=$status==='all'?'btn-primary':'btn-outline'?>">Semua</a>

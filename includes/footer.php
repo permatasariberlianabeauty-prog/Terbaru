@@ -91,10 +91,10 @@
   </div>
 </div>
 
-<script src="<?= APP_URL ?>/assets/js/main.js"></script>
-<script src="<?= APP_URL ?>/assets/js/animations.js"></script>
+<script src="<?= APP_URL ?>/assets/js/main.js" defer></script>
+<script src="<?= APP_URL ?>/assets/js/animations.js" defer></script>
 <script>
-  lucide.createIcons();
+  // Set NOXARA config before deferred scripts run
   <?php if (isset($user) && $user): ?>
   window.NOXARA = {
     userId: <?= (int)$user['id'] ?>,
@@ -103,7 +103,20 @@
     lang: '<?= $userLang ?>',
     theme: '<?= $userTheme ?>'
   };
+  <?php else: ?>
+  window.NOXARA = { appUrl: '<?= APP_URL ?>' };
   <?php endif; ?>
+  // Init Lucide icons after all deferred scripts load
+  document.addEventListener('DOMContentLoaded', function() {
+    function tryLucide() {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      } else {
+        setTimeout(tryLucide, 50);
+      }
+    }
+    tryLucide();
+  });
 </script>
 </body>
 </html>
