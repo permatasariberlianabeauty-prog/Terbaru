@@ -175,8 +175,16 @@ include __DIR__ . '/../includes/header.php';
 <!-- STEP 2: QRIS -->
 <div id="depositStep2" style="display:none">
   <div class="qris-container">
-    <div class="qris-title">Scan & Bayar</div>
-    <div class="qris-amount-label">Total yang harus dibayar</div>
+    <!-- Noxara QR Header Branding -->
+    <div class="noxara-qr-brand">
+      <div class="noxara-qr-logo">
+        <span class="noxara-qr-icon">⬡</span>
+        <span class="noxara-qr-name">NOXARA</span>
+      </div>
+      <div class="noxara-qr-tagline">Scan & Bayar Sekarang</div>
+    </div>
+
+    <div class="qris-title">Total yang harus dibayar</div>
     <div class="qris-amount" id="qrisAmount"></div>
     <div class="qris-unique" id="qrisUnique"></div>
     <div class="qris-code" id="qrisCode"></div>
@@ -205,6 +213,97 @@ include __DIR__ . '/../includes/header.php';
 
 <?php include __DIR__ . '/../includes/mobile_nav.php'; ?>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
+
+<style>
+/* ===== NOXARA QR BRANDING ===== */
+.noxara-qr-brand {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  border-radius: 16px 16px 0 0;
+  padding: 18px 20px 14px;
+  text-align: center;
+  margin: -1px -1px 0;
+  position: relative;
+  overflow: hidden;
+}
+.noxara-qr-brand::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 100px; height: 100px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+}
+.noxara-qr-brand::after {
+  content: '';
+  position: absolute;
+  bottom: -20px; left: -20px;
+  width: 80px; height: 80px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+.noxara-qr-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.noxara-qr-icon {
+  font-size: 22px;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.5));
+}
+.noxara-qr-name {
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 4px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.noxara-qr-tagline {
+  font-size: 11px;
+  color: rgba(255,255,255,0.8);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+/* ===== QR IMAGE WRAPPER ===== */
+.noxara-qr-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 10px;
+}
+.noxara-qr-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #a0aec0;
+  font-size: 13px;
+}
+.qr-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(99,102,241,0.2);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#qrImage {
+  width: 220px;
+  height: 220px;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(99,102,241,0.25);
+  border: 3px solid rgba(99,102,241,0.3);
+  background: #fff;
+}
+.qris-container {
+  border-radius: 20px !important;
+  overflow: hidden;
+  border: 1px solid rgba(99,102,241,0.2);
+}
+</style>
+
 <script>
 let currentTxId = null, pollInterval = null, qrisExpiry = 0;
 const CSRF = '<?= csrfToken() ?>';
@@ -237,9 +336,24 @@ function proceedDeposit(){
 
 function generateQRImage(qrString){
   const c = document.getElementById('qrisCode');
-  c.innerHTML = '<canvas id="qrCanvas"></canvas>';
-  if(typeof QRCode !== 'undefined'){ new QRCode(document.getElementById('qrCanvas'),{text:qrString,width:220,height:220,colorDark:'#ffffff',colorLight:'transparent'}); }
-  else { c.innerHTML = '<div class="qris-raw-string">'+qrString+'</div>'; }
+  const encoded = encodeURIComponent(qrString);
+  const qrUrl = `https://larabert-qrgen.hf.space/v1/create-qr-code?size=500x500&style=1&color=6366f1&data=${encoded}`;
+  c.innerHTML = `
+    <div class="noxara-qr-wrapper">
+      <div class="noxara-qr-loading" id="qrLoadingSpinner">
+        <div class="qr-spinner"></div>
+        <span>Generating QR...</span>
+      </div>
+      <img
+        id="qrImage"
+        src="${qrUrl}"
+        alt="QRIS Code"
+        style="display:none;"
+        onload="document.getElementById('qrLoadingSpinner').style.display='none'; this.style.display='block';"
+        onerror="document.getElementById('qrLoadingSpinner').innerHTML='<span style=color:#ff6b6b>Gagal load QR. Coba lagi.</span>'; console.error('QR load failed');"
+      />
+    </div>
+  `;
 }
 
 function startQrisCountdown(){
