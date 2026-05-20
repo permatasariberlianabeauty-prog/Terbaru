@@ -125,7 +125,7 @@ function addTransaction(int $userId, string $type, float $amount, string $desc='
     $bal = (float)$user['balance'];
     $after = $bal + $amount;
     $stmt = db()->prepare("INSERT INTO transactions (user_id,type,amount,balance_before,balance_after,description,ref_id) VALUES (?,?,?,?,?,?,?)");
-    $stmt->bind_param('isddds i', $userId, $type, $amount, $bal, $after, $desc, $refId);
+    $stmt->bind_param('isdddsi', $userId, $type, $amount, $bal, $after, $desc, $refId);
     $stmt->execute();
     $stmt->close();
 }

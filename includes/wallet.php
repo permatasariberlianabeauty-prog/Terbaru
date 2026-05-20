@@ -13,7 +13,7 @@ function creditBalance(int $userId, float $amount, string $type, string $desc=''
         $bal = (float)($user['balance'] ?? 0);
         $before = $bal - $amount;
         $ins = db()->prepare("INSERT INTO transactions (user_id,type,amount,balance_before,balance_after,description,ref_id) VALUES (?,?,?,?,?,?,?)");
-        $ins->bind_param('isddds i', $userId, $type, $amount, $before, $bal, $desc, $refId);
+        $ins->bind_param('isdddsi', $userId, $type, $amount, $before, $bal, $desc, $refId);
         $ins->execute();
         $ins->close();
     }
@@ -31,7 +31,7 @@ function debitBalance(int $userId, float $amount, string $type, string $desc='',
         $newBal = (float)$user['balance'] - $amount;
         $ins = db()->prepare("INSERT INTO transactions (user_id,type,amount,balance_before,balance_after,description,ref_id,status) VALUES (?,?,?,?,?,?,?,'success')");
         $neg = -$amount;
-        $ins->bind_param('isddds i', $userId, $type, $neg, $user['balance'], $newBal, $desc, $refId);
+        $ins->bind_param('isdddsi', $userId, $type, $neg, $user['balance'], $newBal, $desc, $refId);
         $ins->execute();
         $ins->close();
     }
