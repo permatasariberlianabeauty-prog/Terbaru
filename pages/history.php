@@ -13,67 +13,18 @@ $search = sanitize($_GET['search'] ?? '');
 $page   = max(1,(int)($_GET['p'] ?? 1));
 $limit  = 20; $offset = ($page-1)*$limit;
 
-// -------------------------------------------------------
-// Bangun kondisi filter untuk UNION query
-// transactions: kolom status ada (success/pending/failed)
-// deposits pending: status = 'pending' atau 'expired'
-// -------------------------------------------------------
-$periodCond = '';
-if ($period === 'today')      $periodCond = " AND DATE(created_at)=CURDATE()";
-elseif ($period === 'week')   $periodCond = " AND created_at>=DATE_SUB(NOW(),INTERVAL 7 DAY)";
-elseif ($period === 'month')  $periodCond = " AND DATE_FORMAT(created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')";
+$where = "WHERE user_id=$uid";
+if ($type !== 'all') $where .= " AND type='".dbEscape($type)."'";
+if ($status !== 'all') $where .= " AND status='".dbEscape($status)."'";
+if ($period === 'today') $where .= " AND DATE(created_at)=CURDATE()";
+elseif ($period === 'week') $where .= " AND created_at>=DATE_SUB(NOW(),INTERVAL 7 DAY)";
+elseif ($period === 'month') $where .= " AND DATE_FORMAT(created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')";
+if ($search) $where .= " AND (description LIKE '%".dbEscape($search)."%')";
 
-$searchCond = $search ? " AND description LIKE '%".dbEscape($search)."%'" : '';
+$totalRows = dbQuery("SELECT COUNT(*) as c FROM transactions $where")->fetch_assoc()['c'];
+$txs = dbQuery("SELECT * FROM transactions $where ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
 
-// -- Query A: tabel transactions (semua jenis sudah settle) --
-$condA = "user_id=$uid";
-if ($type !== 'all' && $type !== 'deposit') $condA .= " AND type='".dbEscape($type)."'";
-if ($type === 'deposit') $condA .= " AND type='deposit'";
-if ($status !== 'all') $condA .= " AND status='".dbEscape($status)."'";
-$condA .= $periodCond . $searchCond;
-
-// -- Query B: deposits pending/expired yang BELUM ada di transactions --
-// Hanya tampilkan kalau filter type = all / deposit
-// dan filter status = all / pending / expired
-$showDepPending = ($type === 'all' || $type === 'deposit')
-               && ($status === 'all' || $status === 'pending' || $status === 'expired');
-
-$condB = "user_id=$uid AND status IN ('pending','expired')";
-if ($status !== 'all') $condB .= " AND status='".dbEscape($status)."'";
-$condB .= $periodCond;
-if ($search) $condB .= " AND transaction_id LIKE '%".dbEscape($search)."%'";
-
-// Bangunn UNION supaya deposit pending kelihatan di riwayat
-if ($showDepPending) {
-    $unionSQL = "
-        SELECT id, 'deposit' AS type, original_amount AS amount,
-               0 AS balance_before, 0 AS balance_after,
-               CONCAT('Isi ulang via QRIS — menunggu konfirmasi') AS description,
-               status, created_at, transaction_id AS ref_tx
-        FROM deposits
-        WHERE $condB
-
-        UNION ALL
-
-        SELECT id, type, amount, balance_before, balance_after,
-               description, status, created_at, NULL AS ref_tx
-        FROM transactions
-        WHERE $condA
-    ";
-} else {
-    $unionSQL = "
-        SELECT id, type, amount, balance_before, balance_after,
-               description, status, created_at, NULL AS ref_tx
-        FROM transactions
-        WHERE $condA
-    ";
-}
-
-$countSQL   = "SELECT COUNT(*) as c FROM ($unionSQL) AS combined";
-$totalRows  = (int)(dbQuery($countSQL)->fetch_assoc()['c'] ?? 0);
-$txs        = dbQuery("SELECT * FROM ($unionSQL) AS combined ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
-
-// Summary (hanya dari transactions yang sudah settle)
+// Summary
 $sumIn  = dbQuery("SELECT COALESCE(SUM(amount),0) as t FROM transactions WHERE user_id=$uid AND amount>0 AND DATE_FORMAT(created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')")->fetch_assoc()['t'];
 $sumOut = dbQuery("SELECT COALESCE(SUM(ABS(amount)),0) as t FROM transactions WHERE user_id=$uid AND amount<0 AND DATE_FORMAT(created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')")->fetch_assoc()['t'];
 
@@ -128,21 +79,16 @@ include __DIR__ . '/../includes/header.php';
   <?php if ($txs && $txs->num_rows > 0): while ($tx = $txs->fetch_assoc()):
     $icons = ['deposit'=>'plus-circle','withdraw'=>'minus-circle','mining'=>'cpu','referral'=>'users','bonus'=>'gift','purchase'=>'shopping-bag','daily'=>'calendar-check'];
     $icon = $icons[$tx['type']] ?? 'circle';
-    $isPending = ($tx['status'] === 'pending' || $tx['status'] === 'expired');
   ?>
-  <div class="tx-item-full <?= $isPending ? 'tx-pending-row' : '' ?>" onclick="showTxDetail(<?= htmlspecialchars(json_encode($tx)) ?>)">
-    <div class="tif-icon tx-<?= $tx['type'] ?> <?= $isPending ? 'tx-icon-pending' : '' ?>">
-      <i data-lucide="<?= $isPending ? 'clock' : $icon ?>"></i>
-    </div>
+  <div class="tx-item-full" onclick="showTxDetail(<?= htmlspecialchars(json_encode($tx)) ?>)">
+    <div class="tif-icon tx-<?= $tx['type'] ?>"><i data-lucide="<?= $icon ?>"></i></div>
     <div class="tif-info">
       <div class="tif-desc"><?= htmlspecialchars($tx['description'] ?? ucfirst($tx['type'])) ?></div>
       <div class="tif-date"><?= date('d M Y H:i', strtotime($tx['created_at'])) ?></div>
-      <div class="tif-id">ID: <?= $tx['ref_tx'] ? htmlspecialchars(substr($tx['ref_tx'],0,20)).'...' : '#'.$tx['id'] ?></div>
+      <div class="tif-id">ID: #<?= $tx['id'] ?></div>
     </div>
     <div class="tif-right">
-      <div class="tif-amount <?= (float)$tx['amount']>=0?'positive':'negative' ?>">
-        <?= ((float)$tx['amount']>=0?'+':'').formatRupiah(abs((float)$tx['amount'])) ?>
-      </div>
+      <div class="tif-amount <?= $tx['amount']>=0?'positive':'negative' ?>"><?= ($tx['amount']>=0?'+':'').formatRupiah(abs((float)$tx['amount'])) ?></div>
       <div class="status-badge status-<?= $tx['status'] ?>"><?= ucfirst($tx['status']) ?></div>
     </div>
   </div>
@@ -175,10 +121,6 @@ include __DIR__ . '/../includes/header.php';
 
 <?php include __DIR__ . '/../includes/mobile_nav.php'; ?>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
-<style>
-.tx-pending-row { opacity: 0.85; border-left: 3px solid #f59e0b; }
-.tx-icon-pending { background: rgba(245,158,11,0.15) !important; color: #f59e0b !important; }
-</style>
 <script>
 let currentTxId=null;
 function applyFilter(){
@@ -189,22 +131,17 @@ function applyFilter(){
   location.href=`?type=${t}&status=${s}&period=${p}&search=${encodeURIComponent(q)}`;
 }
 function showTxDetail(tx){
-  currentTxId = tx.ref_tx || tx.id;
-  const isPending = (tx.status === 'pending' || tx.status === 'expired');
-  const pendingNote = isPending
-    ? `<div class="tx-detail-row pending-note"><span>⚠️ Info</span><strong>Menunggu konfirmasi pembayaran. Hubungi admin jika sudah bayar tapi status belum berubah.</strong></div>`
-    : '';
+  currentTxId=tx.id;
   document.getElementById('txDetailContent').innerHTML=`
-    ${pendingNote}
-    <div class="tx-detail-row"><span>ID Transaksi</span><strong>${tx.ref_tx ? tx.ref_tx : '#'+tx.id}</strong></div>
+    <div class="tx-detail-row"><span>ID Transaksi</span><strong>#${tx.id}</strong></div>
     <div class="tx-detail-row"><span>Jenis</span><strong>${tx.type}</strong></div>
-    <div class="tx-detail-row"><span>Jumlah</span><strong>${(parseFloat(tx.amount)||0)>=0?'+':''}Rp ${Math.abs(parseFloat(tx.amount)||0).toLocaleString('id-ID')}</strong></div>
-    <div class="tx-detail-row"><span>Status</span><strong class="status-badge status-${tx.status}">${tx.status.charAt(0).toUpperCase()+tx.status.slice(1)}</strong></div>
+    <div class="tx-detail-row"><span>Jumlah</span><strong>${tx.amount>=0?'+':''}Rp ${Math.abs(tx.amount).toLocaleString('id-ID')}</strong></div>
+    <div class="tx-detail-row"><span>Status</span><strong>${tx.status}</strong></div>
     <div class="tx-detail-row"><span>Keterangan</span><strong>${tx.description||'-'}</strong></div>
     <div class="tx-detail-row"><span>Tanggal</span><strong>${tx.created_at}</strong></div>`;
   document.getElementById('txDetailModal').style.display='flex';
 }
 function copyTxId(){
-  navigator.clipboard.writeText(String(currentTxId)).then(()=>showToast('ID disalin!','success'));
+  navigator.clipboard.writeText('#'+currentTxId).then(()=>showToast('ID disalin!','success'));
 }
 </script>

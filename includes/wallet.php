@@ -195,14 +195,11 @@ function checkPaymentStatus(string $transactionId): array {
     curl_close($ch);
     $data = json_decode($res, true);
     $raw = $data['data'] ?? [];
-
-    // Normalisasi semua kemungkinan status "lunas" dari Cashify ke 'paid'
-    // Cashify bisa return: POSS, paid, success, PAID, SUCCESS
-    $rawStatus = strtolower($raw['status'] ?? '');
-    if (in_array($rawStatus, ['paid', 'poss', 'success', 'completed', 'settlement'])) {
+    // Normalisasi status: Cashify bisa return POSS/success/SUCCESS/completed → semua jadi 'paid'
+    $s = strtolower($raw['status'] ?? '');
+    if (in_array($s, ['paid','poss','success','completed','settlement'])) {
         $raw['status'] = 'paid';
     }
-
     return $raw;
 }
 
