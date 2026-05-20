@@ -1,9 +1,11 @@
 <?php
 // ============================================================
 // NOXARA - includes/mining.php
+// Compatible: PHP 7.2+
 // ============================================================
 
-function getUserActivePackages(int $userId): array {
+function getUserActivePackages($userId) {
+    $userId = (int)$userId;
     $stmt = db()->prepare("SELECT up.*,p.name as product_name,p.category FROM user_packages up JOIN products p ON up.product_id=p.id WHERE up.user_id=? AND up.status='active' ORDER BY up.purchased_at DESC");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
@@ -14,7 +16,9 @@ function getUserActivePackages(int $userId): array {
     return $packages;
 }
 
-function startMining(int $userId, int $packageId): array {
+function startMining($userId, $packageId) {
+    $userId = (int)$userId;
+    $packageId = (int)$packageId;
     $stmt = db()->prepare("SELECT up.*,p.name as product_name FROM user_packages up JOIN products p ON up.product_id=p.id WHERE up.id=? AND up.user_id=? AND up.status='active' LIMIT 1");
     $stmt->bind_param('ii', $packageId, $userId);
     $stmt->execute();
@@ -32,7 +36,6 @@ function startMining(int $userId, int $packageId): array {
     $stmt2->execute();
     $stmt2->close();
 
-    // Schedule profit via session (actual cron handles real credit)
     $_SESSION['mining_finish_'.$packageId] = strtotime($finishAt);
     $_SESSION['mining_profit_'.$packageId] = $pkg['profit_per_day'];
 
@@ -45,7 +48,9 @@ function startMining(int $userId, int $packageId): array {
     ];
 }
 
-function completeMining(int $userId, int $packageId): array {
+function completeMining($userId, $packageId) {
+    $userId = (int)$userId;
+    $packageId = (int)$packageId;
     $stmt = db()->prepare("SELECT up.*,p.name as product_name FROM user_packages up JOIN products p ON up.product_id=p.id WHERE up.id=? AND up.user_id=? AND up.status='active' AND up.mining_today=1 LIMIT 1");
     $stmt->bind_param('ii', $packageId, $userId);
     $stmt->execute();
@@ -53,7 +58,7 @@ function completeMining(int $userId, int $packageId): array {
     $stmt->close();
     if (!$pkg) return ['success'=>false,'message'=>'Paket tidak valid'];
 
-    $lastMining = strtotime($pkg['last_mining'] ?? '');
+    $lastMining = strtotime($pkg['last_mining'] ? $pkg['last_mining'] : '');
     $hoursAgo = (time() - $lastMining) / 3600;
     if ($hoursAgo < MINING_COUNTDOWN_HOURS) {
         $remaining = (MINING_COUNTDOWN_HOURS * 3600) - (time() - $lastMining);
@@ -70,7 +75,6 @@ function completeMining(int $userId, int $packageId): array {
     $stmt2->execute();
     $stmt2->close();
 
-    // Credit balance
     dbQuery("UPDATE users SET balance=balance+$profit,total_mining=total_mining+$profit WHERE id=$userId");
     $desc = dbEscape('Profit mining: '.$pkg['product_name'].' hari ke-'.$newDays);
     dbQuery("INSERT INTO transactions (user_id,type,amount,description) VALUES ($userId,'mining',$profit,'$desc')");
@@ -82,18 +86,12 @@ function completeMining(int $userId, int $packageId): array {
     return ['success'=>true,'profit'=>$profit,'days'=>$newDays,'status'=>$status];
 }
 
-function resetMiningDaily(): void {
+function resetMiningDaily() {
     dbQuery("UPDATE user_packages SET mining_today=0 WHERE status='active'");
-    // Log skipped mining
-    $pkgs = dbQuery("SELECT up.id,up.user_id FROM user_packages up WHERE up.status='active' AND up.mining_today=0 AND DATE(up.last_mining) < CURDATE()");
-    if ($pkgs) {
-        while ($p = $pkgs->fetch_assoc()) {
-            dbQuery("INSERT INTO mining_logs (user_id,package_id,profit,status) VALUES ({$p['user_id']},{$p['id']},0,'skipped')");
-        }
-    }
 }
 
-function getMiningStats(int $userId): array {
+function getMiningStats($userId) {
+    $userId = (int)$userId;
     $today = date('Y-m-d');
     $month = date('Y-m');
 
@@ -101,14 +99,20 @@ function getMiningStats(int $userId): array {
     $monthProfit = dbQuery("SELECT COALESCE(SUM(profit),0) as total FROM mining_logs WHERE user_id=$userId AND status='success' AND DATE_FORMAT(mined_at,'%Y-%m')='$month'");
     $totalProfit = dbQuery("SELECT COALESCE(SUM(profit),0) as total FROM mining_logs WHERE user_id=$userId AND status='success'");
 
+    $todayVal = 0; $monthVal = 0; $totalVal = 0;
+    if ($todayProfit && $row = $todayProfit->fetch_assoc()) $todayVal = (float)$row['total'];
+    if ($monthProfit && $row = $monthProfit->fetch_assoc()) $monthVal = (float)$row['total'];
+    if ($totalProfit && $row = $totalProfit->fetch_assoc()) $totalVal = (float)$row['total'];
+
     return [
-        'today'  => (float)($todayProfit?->fetch_assoc()['total'] ?? 0),
-        'month'  => (float)($monthProfit?->fetch_assoc()['total'] ?? 0),
-        'total'  => (float)($totalProfit?->fetch_assoc()['total'] ?? 0),
+        'today'  => $todayVal,
+        'month'  => $monthVal,
+        'total'  => $totalVal,
     ];
 }
 
-function getMiningCalendar(int $userId, string $month): array {
+function getMiningCalendar($userId, $month) {
+    $userId = (int)$userId;
     $m = dbEscape($month);
     $logs = dbQuery("SELECT DATE(mined_at) as log_date, status FROM mining_logs WHERE user_id=$userId AND DATE_FORMAT(mined_at,'%Y-%m')='$m'");
     $calendar = [];
@@ -120,14 +124,17 @@ function getMiningCalendar(int $userId, string $month): array {
     return $calendar;
 }
 
-function getMiningChart(int $userId): array {
+function getMiningChart($userId) {
+    $userId = (int)$userId;
     $days = [];
     for ($i = 6; $i >= 0; $i--) {
         $date = date('Y-m-d', strtotime("-$i days"));
         $r = dbQuery("SELECT COALESCE(SUM(profit),0) as total FROM mining_logs WHERE user_id=$userId AND status='success' AND DATE(mined_at)='$date'");
+        $total = 0;
+        if ($r && $row = $r->fetch_assoc()) $total = (float)$row['total'];
         $days[] = [
             'date'  => date('d/m', strtotime($date)),
-            'total' => (float)($r?->fetch_assoc()['total'] ?? 0)
+            'total' => $total
         ];
     }
     return $days;

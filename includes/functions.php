@@ -1,37 +1,39 @@
 <?php
 // ============================================================
 // NOXARA - includes/functions.php
+// Compatible: PHP 7.2+
 // ============================================================
 
-function formatRupiah(float $amount): string {
-    return 'Rp ' . number_format($amount, 0, ',', '.');
+function formatRupiah($amount) {
+    return 'Rp ' . number_format((float)$amount, 0, ',', '.');
 }
 
-function formatNumber(float $num): string {
+function formatNumber($num) {
     if ($num >= 1000000) return number_format($num/1000000, 1) . 'Jt';
     if ($num >= 1000) return number_format($num/1000, 1) . 'Rb';
     return number_format($num, 0);
 }
 
-function getSetting(string $key, string $default = ''): string {
+function getSetting($key, $default = '') {
     static $cache = [];
     if (isset($cache[$key])) return $cache[$key];
     $k = dbEscape($key);
     $r = dbQuery("SELECT value FROM settings WHERE key_name='$k' LIMIT 1");
     if ($r && $r->num_rows > 0) {
-        $cache[$key] = $r->fetch_assoc()['value'] ?? $default;
+        $row = $r->fetch_assoc();
+        $cache[$key] = isset($row['value']) ? $row['value'] : $default;
         return $cache[$key];
     }
     return $default;
 }
 
-function setSetting(string $key, string $value): void {
+function setSetting($key, $value) {
     $k = dbEscape($key);
     $v = dbEscape($value);
     dbQuery("INSERT INTO settings (key_name,value) VALUES ('$k','$v') ON DUPLICATE KEY UPDATE value='$v'");
 }
 
-function generateReferralCode(): string {
+function generateReferralCode() {
     do {
         $code = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
         $r = dbQuery("SELECT id FROM users WHERE referral_code='$code' LIMIT 1");
@@ -39,56 +41,58 @@ function generateReferralCode(): string {
     return $code;
 }
 
-function generateTxId(): string {
+function generateTxId() {
     return 'NX' . strtoupper(uniqid()) . mt_rand(100,999);
 }
 
-function hashPassword(string $pw): string {
+function hashPassword($pw) {
     return password_hash($pw, PASSWORD_BCRYPT, ['cost' => 12]);
 }
 
-function verifyPassword(string $pw, string $hash): bool {
+function verifyPassword($pw, $hash) {
     return password_verify($pw, $hash);
 }
 
-function hashPin(string $pin): string {
+function hashPin($pin) {
     return password_hash($pin, PASSWORD_BCRYPT, ['cost' => 10]);
 }
 
-function verifyPin(string $pin, string $hash): bool {
+function verifyPin($pin, $hash) {
     return password_verify($pin, $hash);
 }
 
-function sanitize(string $val): string {
+function sanitize($val) {
     return htmlspecialchars(strip_tags(trim($val)), ENT_QUOTES, 'UTF-8');
 }
 
-function redirect(string $url): void {
+function redirect($url) {
     header("Location: $url");
     exit;
 }
 
-function jsonResponse(array $data, int $code = 200): void {
+function jsonResponse($data, $code = 200) {
     http_response_code($code);
     header('Content-Type: application/json');
     echo json_encode($data);
     exit;
 }
 
-function isAjax(): bool {
+function isAjax() {
     return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 }
 
-function getClientIp(): string {
-    return $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+function getClientIp() {
+    if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    if (isset($_SERVER['REMOTE_ADDR'])) return $_SERVER['REMOTE_ADDR'];
+    return '0.0.0.0';
 }
 
-function getUserAgent(): string {
-    return $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+function getUserAgent() {
+    return isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'Unknown';
 }
 
-function getGreeting(): string {
+function getGreeting() {
     $h = (int)date('G');
     if ($h >= 5 && $h < 11) return 'Selamat Pagi';
     if ($h >= 11 && $h < 15) return 'Selamat Siang';
@@ -96,7 +100,7 @@ function getGreeting(): string {
     return 'Selamat Malam';
 }
 
-function getGreetingEn(): string {
+function getGreetingEn() {
     $h = (int)date('G');
     if ($h >= 5 && $h < 12) return 'Good Morning';
     if ($h >= 12 && $h < 17) return 'Good Afternoon';
@@ -104,47 +108,50 @@ function getGreetingEn(): string {
     return 'Good Night';
 }
 
-function getVipInfo(int $level): array {
+function getVipInfo($level) {
+    $level = (int)$level;
     $r = dbQuery("SELECT * FROM vip_settings WHERE level=$level LIMIT 1");
     if ($r && $r->num_rows > 0) return $r->fetch_assoc();
     return ['level'=>0,'name'=>'VIP 0','min_withdraw'=>100000,'withdraw_fee_percent'=>15];
 }
 
-function getUserById(int $id): ?array {
+function getUserById($id) {
+    $id = (int)$id;
     $stmt = db()->prepare("SELECT * FROM users WHERE id=? LIMIT 1");
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $res = $stmt->get_result()->fetch_assoc();
     $stmt->close();
-    return $res ?: null;
+    return $res ? $res : null;
 }
 
-function addTransaction(int $userId, string $type, float $amount, string $desc='', int $refId=0): void {
+function addTransaction($userId, $type, $amount, $desc = '', $refId = 0) {
     $user = getUserById($userId);
     if (!$user) return;
     $bal = (float)$user['balance'];
     $after = $bal + $amount;
     $stmt = db()->prepare("INSERT INTO transactions (user_id,type,amount,balance_before,balance_after,description,ref_id) VALUES (?,?,?,?,?,?,?)");
-    $stmt->bind_param('isddds i', $userId, $type, $amount, $bal, $after, $desc, $refId);
+    $stmt->bind_param('isdddsi', $userId, $type, $amount, $bal, $after, $desc, $refId);
     $stmt->execute();
     $stmt->close();
 }
 
-function addNotification(int $userId, string $title, string $msg, string $type='info'): void {
+function addNotification($userId, $title, $msg, $type = 'info') {
     $stmt = db()->prepare("INSERT INTO notifications (user_id,title,message,type) VALUES (?,?,?,?)");
     $stmt->bind_param('isss', $userId, $title, $msg, $type);
     $stmt->execute();
     $stmt->close();
 }
 
-function broadcastNotification(string $title, string $msg, string $type='info'): void {
+function broadcastNotification($title, $msg, $type = 'info') {
     $stmt = db()->prepare("INSERT INTO notifications (user_id,title,message,type,is_broadcast) VALUES (NULL,?,?,?,1)");
     $stmt->bind_param('sss', $title, $msg, $type);
     $stmt->execute();
     $stmt->close();
 }
 
-function getUnreadNotifCount(int $userId): int {
+function getUnreadNotifCount($userId) {
+    $userId = (int)$userId;
     $stmt = db()->prepare("SELECT COUNT(*) as c FROM notifications WHERE (user_id=? OR is_broadcast=1) AND is_read=0");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
@@ -153,7 +160,8 @@ function getUnreadNotifCount(int $userId): int {
     return (int)($row['c'] ?? 0);
 }
 
-function getUnreadChatCount(int $userId): int {
+function getUnreadChatCount($userId) {
+    $userId = (int)$userId;
     $stmt = db()->prepare("SELECT COUNT(*) as c FROM live_chats WHERE user_id=? AND sender='admin' AND is_read=0");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
@@ -162,45 +170,36 @@ function getUnreadChatCount(int $userId): int {
     return (int)($row['c'] ?? 0);
 }
 
-function isMiningToday(int $packageId): bool {
-    $stmt = db()->prepare("SELECT mining_today FROM user_packages WHERE id=? LIMIT 1");
-    $stmt->bind_param('i', $packageId);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    return (bool)($row['mining_today'] ?? false);
+function calcRoi($price, $profitDay, $days) {
+    if ((float)$price <= 0) return 0;
+    return round(((float)$profitDay * $days / (float)$price) * 100, 1);
 }
 
-function calcRoi(float $price, float $profitDay, int $days): float {
-    if ($price <= 0) return 0;
-    return round(($profitDay * $days / $price) * 100, 1);
+function calcTotalProfit($profitDay, $days) {
+    return (float)$profitDay * $days;
 }
 
-function calcTotalProfit(float $profitDay, int $days): float {
-    return $profitDay * $days;
+function vipBadgeColor($level) {
+    $level = (int)$level;
+    if ($level === 1) return '#C0C0C0';
+    if ($level === 2) return '#FFD700';
+    if ($level === 3) return '#FF6B35';
+    return '#6B7280';
 }
 
-function vipBadgeColor(int $level): string {
-    return match($level) {
-        1 => '#C0C0C0',
-        2 => '#FFD700',
-        3 => '#FF6B35',
-        default => '#6B7280'
-    };
+function vipBadgeName($level) {
+    return 'VIP ' . (int)$level;
 }
 
-function vipBadgeName(int $level): string {
-    return 'VIP ' . $level;
-}
-
-function logAdminAction(int $adminId, string $action, string $detail=''): void {
+function logAdminAction($adminId, $action, $detail = '') {
+    $adminId = (int)$adminId;
     $ip = dbEscape(getClientIp());
     $act = dbEscape($action);
     $det = dbEscape($detail);
     dbQuery("INSERT INTO admin_logs (admin_id,action,detail,ip_address) VALUES ($adminId,'$act','$det','$ip')");
 }
 
-function checkMaintenanceMode(): void {
+function checkMaintenanceMode() {
     if (getSetting('maintenance_mode') === '1') {
         if (!isAdmin()) {
             include __DIR__ . '/../pages/maintenance.php';

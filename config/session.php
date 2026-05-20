@@ -1,6 +1,7 @@
 <?php
 // ============================================================
 // NOXARA - config/session.php
+// Compatible: PHP 7.2+
 // ============================================================
 if (!defined('SESSION_NAME')) {
     require_once __DIR__ . '/config.php';
@@ -19,33 +20,33 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-function isLoggedIn(): bool {
+function isLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
-function isAdmin(): bool {
+function isAdmin() {
     return isset($_SESSION['admin_id']) && !empty($_SESSION['admin_id']);
 }
 
-function requireLogin(): void {
+function requireLogin() {
     if (!isLoggedIn()) {
         header('Location: ' . APP_URL . '/auth/login.php');
         exit;
     }
 }
 
-function requireAdmin(): void {
+function requireAdmin() {
     if (!isAdmin()) {
         header('Location: ' . APP_URL . '/adm-noxara/login.php');
         exit;
     }
 }
 
-function setFlash(string $type, string $message): void {
+function setFlash($type, $message) {
     $_SESSION['flash'] = ['type' => $type, 'message' => $message];
 }
 
-function getFlash(): ?array {
+function getFlash() {
     if (isset($_SESSION['flash'])) {
         $flash = $_SESSION['flash'];
         unset($_SESSION['flash']);
@@ -54,7 +55,7 @@ function getFlash(): ?array {
     return null;
 }
 
-function currentUser(): ?array {
+function currentUser() {
     if (!isLoggedIn()) return null;
     static $user = null;
     if ($user === null) {

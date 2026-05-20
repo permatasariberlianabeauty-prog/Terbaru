@@ -1,9 +1,12 @@
 <?php
 // ============================================================
 // NOXARA - includes/wallet.php
+// Compatible: PHP 7.2+
 // ============================================================
 
-function creditBalance(int $userId, float $amount, string $type, string $desc='', int $refId=0): bool {
+function creditBalance($userId, $amount, $type, $desc = '', $refId = 0) {
+    $userId = (int)$userId;
+    $amount = (float)$amount;
     $stmt = db()->prepare("UPDATE users SET balance=balance+? WHERE id=?");
     $stmt->bind_param('di', $amount, $userId);
     $ok = $stmt->execute();
@@ -13,14 +16,16 @@ function creditBalance(int $userId, float $amount, string $type, string $desc=''
         $bal = (float)($user['balance'] ?? 0);
         $before = $bal - $amount;
         $ins = db()->prepare("INSERT INTO transactions (user_id,type,amount,balance_before,balance_after,description,ref_id) VALUES (?,?,?,?,?,?,?)");
-        $ins->bind_param('isddds i', $userId, $type, $amount, $before, $bal, $desc, $refId);
+        $ins->bind_param('isdddsi', $userId, $type, $amount, $before, $bal, $desc, $refId);
         $ins->execute();
         $ins->close();
     }
     return $ok;
 }
 
-function debitBalance(int $userId, float $amount, string $type, string $desc='', int $refId=0): bool {
+function debitBalance($userId, $amount, $type, $desc = '', $refId = 0) {
+    $userId = (int)$userId;
+    $amount = (float)$amount;
     $user = getUserById($userId);
     if (!$user || (float)$user['balance'] < $amount) return false;
     $stmt = db()->prepare("UPDATE users SET balance=balance-? WHERE id=? AND balance>=?");
@@ -38,14 +43,17 @@ function debitBalance(int $userId, float $amount, string $type, string $desc='',
     return $ok;
 }
 
-function deductBonusBalance(int $userId, float $amount): void {
+function deductBonusBalance($userId, $amount) {
+    $userId = (int)$userId;
+    $amount = (float)$amount;
     $stmt = db()->prepare("UPDATE users SET bonus_balance=GREATEST(0,bonus_balance-?) WHERE id=?");
     $stmt->bind_param('di', $amount, $userId);
     $stmt->execute();
     $stmt->close();
 }
 
-function hasBonusBalance(int $userId): bool {
+function hasBonusBalance($userId) {
+    $userId = (int)$userId;
     $stmt = db()->prepare("SELECT bonus_balance FROM users WHERE id=? LIMIT 1");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
@@ -54,8 +62,9 @@ function hasBonusBalance(int $userId): bool {
     return (float)($row['bonus_balance'] ?? 0) > 0;
 }
 
-function processReferralCommission(int $userId, float $amount, string $type): void {
-    // type: deposit | product
+function processReferralCommission($userId, $amount, $type) {
+    $userId = (int)$userId;
+    $amount = (float)$amount;
     $stmt = db()->prepare("SELECT id,referred_by,vip_level FROM users WHERE id=? LIMIT 1");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
@@ -63,60 +72,54 @@ function processReferralCommission(int $userId, float $amount, string $type): vo
     $stmt->close();
     if (!$user || !$user['referred_by']) return;
 
-    $levels = [1 => $user['referred_by']];
-    // Get L2
+    $levels = [1 => (int)$user['referred_by']];
     $s2 = db()->prepare("SELECT referred_by FROM users WHERE id=? LIMIT 1");
     $s2->bind_param('i', $levels[1]);
     $s2->execute();
     $r2 = $s2->get_result()->fetch_assoc();
     $s2->close();
     if ($r2 && $r2['referred_by']) {
-        $levels[2] = $r2['referred_by'];
-        // Get L3
+        $levels[2] = (int)$r2['referred_by'];
         $s3 = db()->prepare("SELECT referred_by FROM users WHERE id=? LIMIT 1");
         $s3->bind_param('i', $levels[2]);
         $s3->execute();
         $r3 = $s3->get_result()->fetch_assoc();
         $s3->close();
-        if ($r3 && $r3['referred_by']) $levels[3] = $r3['referred_by'];
+        if ($r3 && $r3['referred_by']) $levels[3] = (int)$r3['referred_by'];
     }
 
-    $vipInfo = getVipInfo(0);
     foreach ($levels as $lvl => $uplineId) {
         $upline = getUserById($uplineId);
         if (!$upline) continue;
         $vipInfo = getVipInfo((int)$upline['vip_level']);
+
         $pct = 0;
         if ($type === 'deposit') {
-            $pct = match($lvl) {
-                1 => (float)$vipInfo['referral_deposit_l1'],
-                2 => (float)$vipInfo['referral_deposit_l2'],
-                3 => (float)$vipInfo['referral_deposit_l3'],
-                default => 0
-            };
+            if ($lvl === 1) $pct = (float)$vipInfo['referral_deposit_l1'];
+            elseif ($lvl === 2) $pct = (float)$vipInfo['referral_deposit_l2'];
+            elseif ($lvl === 3) $pct = (float)$vipInfo['referral_deposit_l3'];
         } else {
-            $pct = match($lvl) {
-                1 => (float)$vipInfo['referral_product_l1'],
-                2 => (float)$vipInfo['referral_product_l2'],
-                3 => (float)$vipInfo['referral_product_l3'],
-                default => 0
-            };
+            if ($lvl === 1) $pct = (float)$vipInfo['referral_product_l1'];
+            elseif ($lvl === 2) $pct = (float)$vipInfo['referral_product_l2'];
+            elseif ($lvl === 3) $pct = (float)$vipInfo['referral_product_l3'];
         }
+
         if ($pct <= 0) continue;
         $commission = round($amount * $pct / 100, 2);
         if ($commission <= 0) continue;
         dbQuery("UPDATE users SET balance=balance+$commission,total_referral=total_referral+$commission WHERE id=$uplineId");
-        $desc = dbEscape("Rabat ".($type==='deposit'?'isi ulang':'transaksi')." level $lvl dari ".($upline['username'] ?? ''));
+        $uname = dbEscape($upline['username'] ?? '');
+        $desc = dbEscape("Rabat ".($type==='deposit'?'isi ulang':'transaksi')." level $lvl dari $uname");
         addNotification($uplineId, 'Komisi Referral Masuk!', "Kamu mendapat komisi Rp ".number_format($commission,0,',','.')." (level $lvl)", 'success');
-        $uId = $uplineId;
         $ins = db()->prepare("INSERT INTO transactions (user_id,type,amount,description) VALUES (?,'referral',?,?)");
-        $ins->bind_param('ids', $uId, $commission, $desc);
+        $ins->bind_param('ids', $uplineId, $commission, $desc);
         $ins->execute();
         $ins->close();
     }
 }
 
-function checkAndUpgradeVip(int $userId): void {
+function checkAndUpgradeVip($userId) {
+    $userId = (int)$userId;
     $user = getUserById($userId);
     if (!$user) return;
     $totalDep = (float)$user['total_deposit'];
@@ -134,7 +137,8 @@ function checkAndUpgradeVip(int $userId): void {
     }
 }
 
-function generateQris(float $amount, string $voucherCode=''): array {
+function generateQris($amount, $voucherCode = '') {
+    $amount = (float)$amount;
     $discount = 0;
     $voucherId = 0;
 
@@ -181,7 +185,7 @@ function generateQris(float $amount, string $voucherCode=''): array {
     return ['success'=>true,'data'=>$data['data'],'discount'=>$discount,'voucher_id'=>$voucherId,'original_amount'=>$amount,'final_amount'=>$finalAmount];
 }
 
-function checkPaymentStatus(string $transactionId): array {
+function checkPaymentStatus($transactionId) {
     $payload = json_encode(['transactionId' => $transactionId]);
     $ch = curl_init(CASHIFY_BASE_URL . '/check-status');
     curl_setopt_array($ch, [
@@ -194,10 +198,10 @@ function checkPaymentStatus(string $transactionId): array {
     $res = curl_exec($ch);
     curl_close($ch);
     $data = json_decode($res, true);
-    return $data['data'] ?? [];
+    return isset($data['data']) ? $data['data'] : [];
 }
 
-function cancelPayment(string $transactionId): bool {
+function cancelPayment($transactionId) {
     $payload = json_encode(['transactionId' => $transactionId]);
     $ch = curl_init(CASHIFY_BASE_URL . '/cancel-status');
     curl_setopt_array($ch, [

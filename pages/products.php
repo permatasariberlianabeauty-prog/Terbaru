@@ -126,13 +126,12 @@ $activeCategory = sanitize($_GET['cat'] ?? 'starter');
 $sortBy = sanitize($_GET['sort'] ?? 'default');
 $nowDt  = date('Y-m-d H:i:s');
 
-$orderBy = match($sortBy) {
-    'price_asc'  => 'p.price ASC',
-    'price_desc' => 'p.price DESC',
-    'roi_desc'   => '(p.profit_per_day*30/p.price) DESC',
-    'popular'    => 'p.total_buyers DESC',
-    default      => 'p.sort_order ASC'
-};
+// Compatible PHP 7.2+ (no match expression)
+if ($sortBy === 'price_asc')  $orderBy = 'p.price ASC';
+elseif ($sortBy === 'price_desc') $orderBy = 'p.price DESC';
+elseif ($sortBy === 'roi_desc')   $orderBy = '(p.profit_per_day*30/p.price) DESC';
+elseif ($sortBy === 'popular')    $orderBy = 'p.total_buyers DESC';
+else                              $orderBy = 'p.sort_order ASC';
 
 $products = dbQuery("SELECT p.*,IF(pf.id IS NOT NULL,1,0) as is_favorite FROM products p LEFT JOIN product_favorites pf ON p.id=pf.product_id AND pf.user_id=$uid WHERE p.category='".dbEscape($activeCategory)."' AND p.status=1 ORDER BY $orderBy");
 

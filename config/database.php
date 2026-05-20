@@ -1,6 +1,7 @@
 <?php
 // ============================================================
 // NOXARA - config/database.php
+// Compatible: PHP 7.2+
 // ============================================================
 if (!defined('DB_HOST')) {
     require_once __DIR__ . '/config.php';
@@ -20,18 +21,18 @@ class Database {
         $this->conn->query("SET time_zone = '+07:00'");
     }
 
-    public static function getInstance(): self {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance;
     }
 
-    public function getConn(): mysqli {
+    public function getConn() {
         return $this->conn;
     }
 
-    public function query(string $sql): mysqli_result|bool {
+    public function query($sql) {
         $result = $this->conn->query($sql);
         if ($this->conn->error) {
             error_log('DB Query Error: ' . $this->conn->error . ' | SQL: ' . $sql);
@@ -39,35 +40,35 @@ class Database {
         return $result;
     }
 
-    public function prepare(string $sql): mysqli_stmt|false {
+    public function prepare($sql) {
         return $this->conn->prepare($sql);
     }
 
-    public function escape(string $value): string {
+    public function escape($value) {
         return $this->conn->real_escape_string($value);
     }
 
-    public function lastInsertId(): int {
+    public function lastInsertId() {
         return $this->conn->insert_id;
     }
 
-    public function affectedRows(): int {
+    public function affectedRows() {
         return $this->conn->affected_rows;
     }
 }
 
-function db(): mysqli {
+function db() {
     return Database::getInstance()->getConn();
 }
 
-function dbQuery(string $sql): mysqli_result|bool {
+function dbQuery($sql) {
     return Database::getInstance()->query($sql);
 }
 
-function dbEscape(string $val): string {
+function dbEscape($val) {
     return Database::getInstance()->escape($val);
 }
 
-function dbLastId(): int {
+function dbLastId() {
     return Database::getInstance()->lastInsertId();
 }

@@ -57,8 +57,9 @@ include __DIR__ . '/../includes/header.php';
 
 <!-- Total sisa hari -->
 <?php if (count($packages) > 0):
-  $totalDays = array_sum(array_map(fn($p)=>max(0,$p['duration_days']-$p['days_elapsed']),$packages));
-  $avgDays = round($totalDays/count($packages));
+  $totalDays = 0;
+  foreach ($packages as $p) { $totalDays += max(0, $p['duration_days'] - $p['days_elapsed']); }
+  $avgDays = count($packages) > 0 ? round($totalDays/count($packages)) : 0;
 ?>
 <div class="mining-summary-bar">
   <i data-lucide="package"></i>
