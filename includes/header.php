@@ -28,8 +28,27 @@ $userLang    = $user ? ($user['lang'] ?? 'id') : 'id';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
-<!-- Lucide Icons -->
-<script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+<!-- Lucide Icons - multiple CDN fallbacks -->
+<script>
+// Try loading lucide from multiple CDNs
+(function(){
+  var cdns = [
+    'https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js',
+    'https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js'
+  ];
+  var idx = 0;
+  function tryLoad(){
+    if(idx >= cdns.length) return;
+    var s = document.createElement('script');
+    s.src = cdns[idx++];
+    s.onload = function(){ if(typeof lucide!=='undefined') lucide.createIcons(); };
+    s.onerror = function(){ tryLoad(); };
+    document.head.appendChild(s);
+  }
+  tryLoad();
+})();
+</script>
 </head>
 <body class="theme-<?= $userTheme ?>">
 <div id="app">

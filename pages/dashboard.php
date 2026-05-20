@@ -199,8 +199,24 @@ include __DIR__ . '/../includes/header.php';
     </div>
   </div>
   <?php $bi++; endwhile; else: ?>
+  <!-- Default banners jika DB kosong -->
   <div class="banner-slide active" style="background:linear-gradient(135deg,#FFD700,#FF8C00)">
-    <div class="banner-content"><h3>Mining Rupiah Setiap Hari</h3><p>Klik tombol mining & raih profit otomatis</p></div>
+    <div class="banner-content">
+      <h3>⛏️ Mining Rupiah Setiap Hari</h3>
+      <p>Klik tombol mining & raih profit otomatis setiap hari</p>
+    </div>
+  </div>
+  <div class="banner-slide" style="background:linear-gradient(135deg,#00D4FF,#0066FF)">
+    <div class="banner-content">
+      <h3>👥 Referral 3 Level</h3>
+      <p>Ajak teman & dapat komisi hingga 10% setiap transaksi</p>
+    </div>
+  </div>
+  <div class="banner-slide" style="background:linear-gradient(135deg,#9D4EDD,#FF006E)">
+    <div class="banner-content">
+      <h3>👑 Upgrade VIP Sekarang</h3>
+      <p>Nikmati biaya WD lebih rendah & limit lebih tinggi</p>
+    </div>
   </div>
   <?php endif; ?>
   <div class="banner-dots" id="bannerDots"></div>
@@ -273,20 +289,29 @@ include __DIR__ . '/../includes/header.php';
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>
 <script>
-initBannerSlider();
-initMiningCountdown();
-<?php if ($showWelcome && getSetting('popup_welcome_status')==='1'): ?>
-setTimeout(()=>{ initWelcomeLights(); },300);
-<?php endif; ?>
-document.getElementById('notifBtn')?.addEventListener('click',()=>{
-  const p = document.getElementById('notifPanel');
-  p.style.display = p.style.display==='none'?'block':'none';
+// Init everything after DOM loads
+document.addEventListener('DOMContentLoaded', function(){
+  // Init banner slider
+  initBannerSlider();
+  // Init mining countdown
+  initMiningCountdown();
+  // Re-init icons (in case lucide loaded late)
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  <?php if ($showWelcome && getSetting('popup_welcome_status')==='1'): ?>
+  setTimeout(function(){ if(typeof initWelcomeLights==='function') initWelcomeLights(); }, 300);
+  <?php endif; ?>
+});
+
+document.getElementById('notifBtn') && document.getElementById('notifBtn').addEventListener('click', function(){
+  var p = document.getElementById('notifPanel');
+  p.style.display = p.style.display==='none' ? 'block' : 'none';
 });
 function closeNotif(){ document.getElementById('notifPanel').style.display='none'; }
 function markAllRead(){
   fetch('<?= APP_URL ?>/api/mark_notif_read.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})});
-  document.querySelectorAll('.notif-item.unread').forEach(e=>e.classList.remove('unread'));
-  document.querySelector('.badge-dot')?.remove();
+  document.querySelectorAll('.notif-item.unread').forEach(function(e){e.classList.remove('unread');});
+  var b = document.querySelector('.badge-dot');
+  if (b) b.remove();
 }
 function closeWelcome(){ document.getElementById('welcomeOverlay').style.display='none'; }
 </script>

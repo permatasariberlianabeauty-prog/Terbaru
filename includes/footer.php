@@ -91,8 +91,8 @@
   </div>
 </div>
 
-<script src="<?= APP_URL ?>/assets/js/main.js"></script>
-<script src="<?= APP_URL ?>/assets/js/animations.js"></script>
+<!-- QRCode library for QRIS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   window.NOXARA = {
     <?php if (isset($user) && $user): ?>
@@ -103,10 +103,21 @@
     lang: '<?= isset($userLang) ? $userLang : "id" ?>',
     theme: '<?= isset($userTheme) ? $userTheme : "dark" ?>'
   };
-  // Init lucide icons
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
-  }
+  // Final init after all scripts loaded
+  document.addEventListener('DOMContentLoaded', function(){
+    // Init Lucide icons
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+    // Init banner slider
+    if (typeof initBannerSlider === 'function') {
+      initBannerSlider();
+    }
+    // Init mining countdown if exists
+    if (typeof initMiningCountdown === 'function') {
+      initMiningCountdown();
+    }
+  });
 </script>
 </body>
 </html>

@@ -205,84 +205,133 @@ include __DIR__ . '/../includes/header.php';
 
 <?php include __DIR__ . '/../includes/mobile_nav.php'; ?>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
+<!-- QRCode.js untuk generate QR image -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 let currentTxId = null, pollInterval = null, qrisExpiry = 0;
 const CSRF = '<?= csrfToken() ?>';
 const APP_URL = '<?= APP_URL ?>';
 
 function setAmount(a){ document.getElementById('depAmount').value=a; }
-function selectPayment(el){ document.querySelectorAll('.payment-item').forEach(e=>e.classList.remove('selected')); el.classList.add('selected'); }
+function selectPayment(el){
+  document.querySelectorAll('.payment-item').forEach(function(e){e.classList.remove('selected');});
+  el.classList.add('selected');
+}
 
 function proceedDeposit(){
-  const amount = parseFloat(document.getElementById('depAmount').value);
-  const voucher = document.getElementById('depVoucher').value.trim();
-  if (!amount || amount < <?= $minDep ?>) { showModal('error','Gagal','Minimal deposit <?= formatRupiah($minDep) ?>'); return; }
-  showLoading();
-  fetch(window.location.href,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'},
-    body:`csrf_token=${CSRF}&amount=${amount}&voucher=${encodeURIComponent(voucher)}`})
-  .then(r=>r.json()).then(d=>{
-    hideLoading();
-    if(!d.success){ showModal('error','Gagal',d.message); return; }
+  var amount = parseFloat(document.getElementById('depAmount').value);
+  var voucher = document.getElementById('depVoucher').value.trim();
+  if (!amount || amount < <?= $minDep ?>) {
+    if(typeof showModal==='function') showModal('error','Gagal','Minimal deposit <?= formatRupiah($minDep) ?>');
+    else alert('Minimal deposit <?= formatRupiah($minDep) ?>');
+    return;
+  }
+  if(typeof showLoading==='function') showLoading();
+  fetch(window.location.href, {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'},
+    body: 'csrf_token='+CSRF+'&amount='+amount+'&voucher='+encodeURIComponent(voucher)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(typeof hideLoading==='function') hideLoading();
+    if(!d.success){
+      if(typeof showModal==='function') showModal('error','Gagal',d.message);
+      else alert(d.message);
+      return;
+    }
     currentTxId = d.transaction_id;
     qrisExpiry = Math.floor(new Date(d.expired_at).getTime()/1000);
     document.getElementById('qrisAmount').textContent = 'Rp '+Number(d.total_amount).toLocaleString('id-ID');
-    document.getElementById('qrisUnique').textContent = d.unique_nominal > 0 ? '(Termasuk kode unik Rp '+d.unique_nominal+')' : '';
+    document.getElementById('qrisUnique').textContent = d.unique_nominal > 0 ? '(+kode unik Rp '+d.unique_nominal+')' : '';
     generateQRImage(d.qr_string);
     document.getElementById('depositStep1').style.display='none';
     document.getElementById('depositStep2').style.display='block';
     startQrisCountdown();
     startPolling();
-  }).catch(()=>{ hideLoading(); showModal('error','Error','Terjadi kesalahan. Coba lagi.'); });
+  })
+  .catch(function(){
+    if(typeof hideLoading==='function') hideLoading();
+    if(typeof showModal==='function') showModal('error','Error','Terjadi kesalahan. Coba lagi.');
+    else alert('Terjadi kesalahan. Coba lagi.');
+  });
 }
 
 function generateQRImage(qrString){
-  const c = document.getElementById('qrisCode');
-  c.innerHTML = '<canvas id="qrCanvas"></canvas>';
-  if(typeof QRCode !== 'undefined'){ new QRCode(document.getElementById('qrCanvas'),{text:qrString,width:220,height:220,colorDark:'#ffffff',colorLight:'transparent'}); }
-  else { c.innerHTML = '<div class="qris-raw-string">'+qrString+'</div>'; }
+  var c = document.getElementById('qrisCode');
+  c.innerHTML = '';
+  if(typeof QRCode !== 'undefined'){
+    var canvas = document.createElement('canvas');
+    c.appendChild(canvas);
+    try {
+      new QRCode(canvas, {
+        text: qrString,
+        width: 220,
+        height: 220,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch(e) {
+      // fallback: show raw string as text
+      c.innerHTML = '<p style="font-size:10px;word-break:break-all;background:#fff;color:#000;padding:10px;border-radius:8px;max-width:250px;margin:0 auto">'+qrString+'</p>';
+    }
+  } else {
+    // No QRCode lib - show text fallback
+    c.innerHTML = '<div style="background:#fff;color:#000;padding:16px;border-radius:12px;font-size:9px;word-break:break-all;max-width:250px;margin:0 auto;text-align:left"><b>QR String:</b><br>'+qrString+'</div>';
+  }
 }
 
 function startQrisCountdown(){
-  const total = <?= CASHIFY_EXPIRED_MINUTES * 60 ?>;
-  let remaining = qrisExpiry - Math.floor(Date.now()/1000);
-  const ring = document.getElementById('countdownRing');
-  const timerEl = document.getElementById('qrisTimer');
-  const circumference = 339.3;
-  const iv = setInterval(()=>{
-    remaining = qrisExpiry - Math.floor(Date.now()/1000);
+  var total = <?= CASHIFY_EXPIRED_MINUTES * 60 ?>;
+  var ring = document.getElementById('countdownRing');
+  var timerEl = document.getElementById('qrisTimer');
+  var circumference = 339.3;
+  var iv = setInterval(function(){
+    var remaining = qrisExpiry - Math.floor(Date.now()/1000);
     if(remaining <= 0){ clearInterval(iv); timerEl.textContent='00:00'; handleExpired(); return; }
-    const m = Math.floor(remaining/60), s = remaining%60;
+    var m = Math.floor(remaining/60), s = remaining%60;
     timerEl.textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-    const offset = circumference * (1 - remaining/total);
-    ring.style.strokeDashoffset = offset;
-    if(remaining <= 120) ring.style.stroke = '#FF4444';
-    if(remaining === 120) showToast('Waktu pembayaran hampir habis!','warning');
-  },1000);
+    var offset = circumference * (1 - remaining/total);
+    if(ring) ring.style.strokeDashoffset = offset;
+    if(remaining <= 120 && ring) ring.style.stroke = '#FF4444';
+    if(remaining === 120 && typeof showToast==='function') showToast('Waktu pembayaran hampir habis!','warning');
+  }, 1000);
 }
 
-function startPolling(){ pollInterval = setInterval(checkPayment,5000); }
+function startPolling(){ pollInterval = setInterval(checkPayment, 5000); }
 
 function checkPayment(){
   if(!currentTxId) return;
-  fetch(window.location.href,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'},
-    body:`csrf_token=${CSRF}&action=check&transaction_id=${currentTxId}`})
-  .then(r=>r.json()).then(d=>{
+  fetch(window.location.href, {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'},
+    body: 'csrf_token='+CSRF+'&action=check&transaction_id='+currentTxId
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
     if(d.status==='paid'){
       clearInterval(pollInterval);
-      showModal('success','Pembayaran Berhasil!','Saldo kamu berhasil ditambahkan. Selamat mining! 🎉',()=>location.href=APP_URL+'/pages/dashboard.php');
+      if(typeof showModal==='function') showModal('success','Pembayaran Berhasil!','Saldo kamu berhasil ditambahkan. Selamat mining! 🎉', function(){ location.href=APP_URL+'/pages/dashboard.php'; });
+      else { alert('Pembayaran berhasil!'); location.href=APP_URL+'/pages/dashboard.php'; }
     }
   });
 }
 
 function cancelDeposit(){
-  showConfirm('Batalkan Transaksi','Yakin ingin membatalkan transaksi ini?',()=>{
-    clearInterval(pollInterval);
-    fetch(window.location.href,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'},
-      body:`csrf_token=${CSRF}&action=cancel&transaction_id=${currentTxId}`})
-    .then(()=>{ showModal('info','Dibatalkan','Transaksi berhasil dibatalkan.',()=>location.reload()); });
-  });
+  if(!confirm('Yakin ingin membatalkan transaksi ini?')) return;
+  clearInterval(pollInterval);
+  fetch(window.location.href, {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'},
+    body: 'csrf_token='+CSRF+'&action=cancel&transaction_id='+currentTxId
+  }).then(function(){ location.reload(); });
 }
 
-function handleExpired(){ clearInterval(pollInterval); showModal('warning','Transaksi Expired','Waktu pembayaran habis. Silakan buat transaksi baru.',()=>location.reload()); }
-function saveQris(){ showToast('Screenshot halaman ini untuk menyimpan QR','info'); }
+function handleExpired(){
+  clearInterval(pollInterval);
+  if(typeof showModal==='function') showModal('warning','Transaksi Expired','Waktu pembayaran habis. Silakan buat transaksi baru.', function(){ location.reload(); });
+  else { alert('Waktu habis. Silakan buat transaksi baru.'); location.reload(); }
+}
+function saveQris(){ if(typeof showToast==='function') showToast('Screenshot halaman ini untuk menyimpan QR','info'); }
 </script>
