@@ -22,28 +22,14 @@ $userLang    = $user ? ($user['lang'] ?? 'id') : 'id';
 <meta name="mobile-web-app-capable" content="yes">
 <title><?= htmlspecialchars($pageTitle) ?> - <?= APP_NAME ?></title>
 
-<!-- Fast font loading: non-blocking -->
+<!-- Inline CSS: embedded directly so it always loads regardless of server config -->
+<?php include __DIR__ . '/inline_styles.php'; ?>
+<!-- Fallback external CSS (loaded async after inline takes effect) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
-<!-- Icons: deferred so it does NOT block page render -->
-<script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js" defer></script>
-<!-- App CSS -->
-<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
-<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/mobile.css">
-<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/animations.css">
-<!-- Critical CSS: instant render, no FOUC -->
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:#0A0E1A;color:#E8EAED;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Arial,sans-serif;min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
-a{text-decoration:none;color:inherit}
-button{cursor:pointer;border:none;background:none;font-family:inherit}
-img{max-width:100%}
-/* Prevent layout shift */
-.page-wrapper{padding:16px;padding-bottom:90px;max-width:480px;margin:0 auto}
-</style>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
 </head>
 <body class="theme-<?= $userTheme ?>">
 <div id="app">

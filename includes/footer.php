@@ -91,32 +91,22 @@
   </div>
 </div>
 
-<script src="<?= APP_URL ?>/assets/js/main.js" defer></script>
-<script src="<?= APP_URL ?>/assets/js/animations.js" defer></script>
+<script src="<?= APP_URL ?>/assets/js/main.js"></script>
+<script src="<?= APP_URL ?>/assets/js/animations.js"></script>
 <script>
-  // Set NOXARA config before deferred scripts run
-  <?php if (isset($user) && $user): ?>
   window.NOXARA = {
+    <?php if (isset($user) && $user): ?>
     userId: <?= (int)$user['id'] ?>,
     username: '<?= addslashes($user['username']) ?>',
+    <?php endif; ?>
     appUrl: '<?= APP_URL ?>',
-    lang: '<?= $userLang ?>',
-    theme: '<?= $userTheme ?>'
+    lang: '<?= isset($userLang) ? $userLang : "id" ?>',
+    theme: '<?= isset($userTheme) ? $userTheme : "dark" ?>'
   };
-  <?php else: ?>
-  window.NOXARA = { appUrl: '<?= APP_URL ?>' };
-  <?php endif; ?>
-  // Init Lucide icons after all deferred scripts load
-  document.addEventListener('DOMContentLoaded', function() {
-    function tryLucide() {
-      if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-      } else {
-        setTimeout(tryLucide, 50);
-      }
-    }
-    tryLucide();
-  });
+  // Init lucide icons
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
 </script>
 </body>
 </html>
