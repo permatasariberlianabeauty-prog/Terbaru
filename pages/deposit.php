@@ -205,8 +205,6 @@ include __DIR__ . '/../includes/header.php';
 
 <?php include __DIR__ . '/../includes/mobile_nav.php'; ?>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
-<!-- QRCode.js untuk generate QR image -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 let currentTxId = null, pollInterval = null, qrisExpiry = 0;
 const CSRF = '<?= csrfToken() ?>';
@@ -257,29 +255,39 @@ function proceedDeposit(){
   });
 }
 
-function generateQRImage(qrString){
+function generateQRImage(qrString) {
   var c = document.getElementById('qrisCode');
   c.innerHTML = '';
-  if(typeof QRCode !== 'undefined'){
-    var canvas = document.createElement('canvas');
-    c.appendChild(canvas);
-    try {
-      new QRCode(canvas, {
-        text: qrString,
-        width: 220,
-        height: 220,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    } catch(e) {
-      // fallback: show raw string as text
-      c.innerHTML = '<p style="font-size:10px;word-break:break-all;background:#fff;color:#000;padding:10px;border-radius:8px;max-width:250px;margin:0 auto">'+qrString+'</p>';
-    }
-  } else {
-    // No QRCode lib - show text fallback
-    c.innerHTML = '<div style="background:#fff;color:#000;padding:16px;border-radius:12px;font-size:9px;word-break:break-all;max-width:250px;margin:0 auto;text-align:left"><b>QR String:</b><br>'+qrString+'</div>';
-  }
+
+  var wrapper = document.createElement('div');
+  wrapper.style.cssText = 'background:#fff;border-radius:20px;padding:16px;display:inline-block;box-shadow:0 8px 32px rgba(255,215,0,0.3);text-align:center';
+
+  var label = document.createElement('div');
+  label.style.cssText = 'font-size:13px;font-weight:800;color:#B45309;margin-bottom:10px;letter-spacing:2px';
+  label.textContent = 'NOXARA';
+  wrapper.appendChild(label);
+
+  var apiUrl = 'https://larabert-qrgen.hf.space/v1/create-qr-code?size=280x280&style=1&color=B45309&data=' + encodeURIComponent(qrString);
+
+  var loader = document.createElement('div');
+  loader.style.cssText = 'width:220px;height:220px;display:flex;align-items:center;justify-content:center;color:#B45309;font-size:13px';
+  loader.textContent = 'Memuat QR...';
+  wrapper.appendChild(loader);
+
+  var img = document.createElement('img');
+  img.style.cssText = 'display:none;width:220px;height:220px;border-radius:10px';
+  img.onload = function() { loader.style.display='none'; img.style.display='block'; };
+  img.onerror = function() {
+    loader.style.display='none';
+    var fb = document.createElement('div');
+    fb.style.cssText = 'font-size:8px;word-break:break-all;color:#000;max-width:220px;padding:8px;background:#f5f5f5;border-radius:8px;text-align:left';
+    fb.textContent = qrString;
+    wrapper.appendChild(fb);
+  };
+  img.src = apiUrl;
+  wrapper.appendChild(img);
+
+  c.appendChild(wrapper);
 }
 
 function startQrisCountdown(){

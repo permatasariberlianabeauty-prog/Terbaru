@@ -28,25 +28,19 @@ $userLang    = $user ? ($user['lang'] ?? 'id') : 'id';
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
-<!-- Lucide Icons - multiple CDN fallbacks -->
+<!-- Lucide Icons - load dari LOCAL file, fallback ke CDN -->
 <script>
-// Try loading lucide from multiple CDNs
 (function(){
-  var cdns = [
-    'https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js',
-    'https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js'
-  ];
-  var idx = 0;
-  function tryLoad(){
-    if(idx >= cdns.length) return;
-    var s = document.createElement('script');
-    s.src = cdns[idx++];
-    s.onload = function(){ if(typeof lucide!=='undefined') lucide.createIcons(); };
-    s.onerror = function(){ tryLoad(); };
-    document.head.appendChild(s);
-  }
-  tryLoad();
+  var s = document.createElement('script');
+  s.src = '<?= APP_URL ?>/assets/js/lucide.min.js';
+  s.onload = function(){ if(typeof lucide!=='undefined') lucide.createIcons(); };
+  s.onerror = function(){
+    var s2 = document.createElement('script');
+    s2.src = 'https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js';
+    s2.onload = function(){ if(typeof lucide!=='undefined') lucide.createIcons(); };
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s);
 })();
 </script>
 </head>

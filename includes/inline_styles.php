@@ -29,12 +29,18 @@ $extraCss = '
 echo '<style>' . $css . $extraCss . '</style>';
 echo "\n";
 // Also embed JS inline for guaranteed loading
-$jsMain  = __DIR__ . '/../assets/js/main.js';
-$jsAnim  = __DIR__ . '/../assets/js/animations.js';
+$jsMain   = __DIR__ . '/../assets/js/main.js';
+$jsAnim   = __DIR__ . '/../assets/js/animations.js';
+$jsLucide = __DIR__ . '/../assets/js/lucide.min.js';
 $js = '';
-if (file_exists($jsMain))  $js .= file_get_contents($jsMain);
-if (file_exists($jsAnim))  $js .= "\n" . file_get_contents($jsAnim);
+if (file_exists($jsMain))   $js .= file_get_contents($jsMain);
+if (file_exists($jsAnim))   $js .= "\n" . file_get_contents($jsAnim);
 if ($js) {
     echo '<script>' . $js . '</script>';
+}
+echo "\n";
+// Embed lucide inline as ultimate fallback (runs after DOM ready)
+if (file_exists($jsLucide)) {
+    echo '<script>' . file_get_contents($jsLucide) . '</script>';
 }
 echo "\n";
