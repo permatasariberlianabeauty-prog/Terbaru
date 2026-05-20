@@ -487,13 +487,13 @@ CREATE TABLE IF NOT EXISTS `user_achievements` (
 -- SEED DATA: admins
 -- Password: Jakakece (hashed)
 -- ============================================================
-INSERT INTO `admins` (`username`, `password`) VALUES
+INSERT IGNORE INTO `admins` (`username`, `password`) VALUES
 ('Jaka17', '$2y$12$/OEZEcTuu5Jd7yt9peqRb./14cEVc7e90SrNgBO2SQiDe6Sf4Sdnu');
 
 -- ============================================================
 -- SEED DATA: vip_settings
 -- ============================================================
-INSERT INTO `vip_settings` (`level`,`name`,`min_deposit`,`min_withdraw`,`withdraw_fee_percent`,`daily_withdraw_limit`,`referral_deposit_l1`,`referral_deposit_l2`,`referral_deposit_l3`,`referral_product_l1`,`referral_product_l2`,`referral_product_l3`) VALUES
+INSERT IGNORE INTO `vip_settings` (`level`,`name`,`min_deposit`,`min_withdraw`,`withdraw_fee_percent`,`daily_withdraw_limit`,`referral_deposit_l1`,`referral_deposit_l2`,`referral_deposit_l3`,`referral_product_l1`,`referral_product_l2`,`referral_product_l3`) VALUES
 (0,'VIP 0',0.00,100000.00,15.00,5000000.00,10.00,5.00,2.00,10.00,4.00,1.00),
 (1,'VIP 1',30000.00,50000.00,5.00,10000000.00,10.00,5.00,2.00,10.00,4.00,1.00),
 (2,'VIP 2',500000.00,30000.00,5.00,20000000.00,10.00,5.00,2.00,10.00,4.00,1.00),
@@ -502,7 +502,7 @@ INSERT INTO `vip_settings` (`level`,`name`,`min_deposit`,`min_withdraw`,`withdra
 -- ============================================================
 -- SEED DATA: settings
 -- ============================================================
-INSERT INTO `settings` (`key_name`, `value`) VALUES
+INSERT IGNORE INTO `settings` (`key_name`, `value`) VALUES
 ('site_name','Noxara'),
 ('site_tagline','Invest Smarter, Grow Faster'),
 ('site_url','https://noxara.page'),
@@ -597,12 +597,12 @@ INSERT INTO `quick_replies` (`question`,`answer`,`sort_order`,`status`) VALUES
 -- SEED DATA: achievements
 -- ============================================================
 INSERT INTO `achievements` (`title`,`description`,`icon`,`type`,`target`,`status`) VALUES
-('Mining Pemula','Mining pertama kali','award',       'mining',1,1),
+('Mining Pemula','Mining pertama kali','award','mining',1,1),
 ('Mining 7 Hari','Mining 7 hari berturut-turut','zap','streak',7,1),
 ('Mining 30 Hari','Mining 30 hari berturut-turut','star','streak',30,1),
 ('Referral Pertama','Berhasil mengajak 1 teman','users','referral',1,1),
 ('Referral Pro','Berhasil mengajak 10 teman','crown','referral',10,1),
 ('Deposit Pertama','Melakukan deposit pertama','dollar-sign','deposit',1,1),
-('Investor Aktif','Total deposit Rp 1.000.000,'trending-up','deposit',1000000,1);
+('Investor Aktif','Total deposit Rp 1.000.000','trending-up','deposit',1000000,1);
 
 SET FOREIGN_KEY_CHECKS=1;
